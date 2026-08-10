@@ -1,15 +1,18 @@
 // src/screens/DashboardScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     Text,
     ScrollView,
     StyleSheet,
-    SafeAreaView,
     TouchableOpacity,
     StatusBar,
     RefreshControl,
+    Modal,
+    Animated,
+    Easing,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
@@ -28,6 +31,12 @@ import {
     LogOut,
     MessageSquare,
     User,
+    MoreVertical,
+    CalendarDays,
+    FileText,
+    GraduationCap,
+    X,
+    Menu as MenuIcon,
 } from 'lucide-react-native';
 
 type DashboardNav = StackNavigationProp<RootStackParamList, 'Dashboard'>;
@@ -64,6 +73,26 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const dateString = `${dayNames[today.getDay()]}, ${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+
+    const [menuVisible, setMenuVisible] = useState(false);
+    const menuAnim = useRef(new Animated.Value(0)).current;
+
+    const openMenu = () => {
+        setMenuVisible(true);
+        Animated.timing(menuAnim, {
+            toValue: 1, duration: 200,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+        }).start();
+    };
+
+    const closeMenu = () => {
+        Animated.timing(menuAnim, {
+            toValue: 0, duration: 160,
+            easing: Easing.in(Easing.ease),
+            useNativeDriver: true,
+        }).start(() => setMenuVisible(false));
+    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -138,6 +167,18 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1A3A6B" />
                 }
             >
+                {/* Menu Trigger Bar */}
+                <TouchableOpacity
+                    style={styles.menuTriggerBar}
+                    onPress={openMenu}
+                    activeOpacity={0.85}
+                    accessibilityLabel="Open Menu"
+                    accessibilityRole="button"
+                >
+                    <MenuIcon size={15} color="#1A3A6B" strokeWidth={2.5} />
+                    <Text style={styles.menuTriggerBarText}>Menu</Text>
+                </TouchableOpacity>
+
                 {/* Quick Stats Row */}
                 <View style={styles.statsRow}>
                     <View style={styles.statChip}>
@@ -292,6 +333,109 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                 visible={showCalModal}
                 onClose={() => setShowCalModal(false)}
             />
+
+            <Modal
+                transparent
+                visible={menuVisible}
+                animationType="none"
+            >
+                <View style={styles.menuOverlay}>
+                    {/* Backdrop: tap anywhere to close */}
+                    <TouchableOpacity
+                        style={styles.menuBackdrop}
+                        activeOpacity={1}
+                        onPress={closeMenu}
+                    />
+
+                    {/* Menu content */}
+                    <Animated.View
+                        style={[styles.menuDropdown, {
+                            opacity: menuAnim,
+                            transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+                        }]}
+                    >
+                        {/* Header */}
+                        <View style={styles.menuHeader}>
+                            <View style={styles.menuAvatar}>
+                                <Text style={styles.menuAvatarText}>
+                                    {faculty.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                                </Text>
+                            </View>
+                            <View style={styles.menuHeaderInfo}>
+                                <Text style={styles.menuFacultyName} numberOfLines={1}>{faculty.name}</Text>
+                                <Text style={styles.menuFacultyDept}>{faculty.department}</Text>
+                            </View>
+                            <TouchableOpacity style={styles.menuCloseBtn} onPress={closeMenu}>
+                                <X size={14} color="#A0AEC0" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.menuDivider} />
+
+                        {/* Menu Item 1: Timetable */}
+                        <TouchableOpacity style={styles.menuItem} onPress={() => {
+                            closeMenu();
+                            navigation.navigate('Timetable', { faculty });
+                        }}>
+                            <View style={styles.menuItemIcon}>
+                                <CalendarDays size={16} color="#3182CE" />
+                            </View>
+                            <View style={styles.menuItemContent}>
+                                <Text style={styles.menuItemLabel}>My Timetable</Text>
+                                <Text style={styles.menuItemSub}>View schedule & classes</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <View style={styles.menuItemDivider} />
+
+                        {/* Menu Item 2: Announcements */}
+                        <TouchableOpacity style={styles.menuItem} onPress={() => {
+                            closeMenu();
+                            navigation.navigate('Announcements', { faculty });
+                        }}>
+                            <View style={styles.menuItemIcon}>
+                                <Bell size={16} color="#3182CE" />
+                            </View>
+                            <View style={styles.menuItemContent}>
+                                <Text style={styles.menuItemLabel}>Announcements</Text>
+                                <Text style={styles.menuItemSub}>Academic & Admin updates</Text>
+                            </View>
+                            {unreadCount > 0 && (
+                                <View style={styles.menuItemBadge}>
+                                    <Text style={styles.menuItemBadgeText}>{unreadCount}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+
+                        <View style={styles.menuItemDivider} />
+
+                        {/* Menu Item 3: Feedback */}
+                        <TouchableOpacity style={styles.menuItem} onPress={() => {
+                            closeMenu();
+                            navigation.navigate('Feedback', { facultyId: faculty.id });
+                        }}>
+                            <View style={styles.menuItemIcon}>
+                                <MessageSquare size={16} color="#3182CE" />
+                            </View>
+                            <View style={styles.menuItemContent}>
+                                <Text style={styles.menuItemLabel}>Report Issue</Text>
+                                <Text style={styles.menuItemSub}>Feedback & Support</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <View style={styles.menuDivider} />
+
+                        {/* Logout */}
+                        <TouchableOpacity style={styles.menuLogout} onPress={() => {
+                            closeMenu();
+                            handleLogout();
+                        }}>
+                            <LogOut size={16} color="#E53E3E" />
+                            <Text style={styles.menuLogoutText}>Logout</Text>
+                        </TouchableOpacity>
+                    </Animated.View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -607,6 +751,104 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.4,
         shadowRadius: 12,
     },
+
+    // ── Three-dot menu ──
+    menuTriggerBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        marginBottom: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        alignSelf: 'flex-start',
+        gap: 8,
+        elevation: 2,
+        shadowColor: '#1A3A6B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+    },
+    menuTriggerBarText: {
+        fontSize: 13,
+        color: '#1A3A6B',
+        fontWeight: '700',
+        letterSpacing: 0.2,
+    },
+    menuOverlay: {
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+    menuBackdrop: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    menuDropdown: {
+        position: 'absolute',
+        top: 204,   // sits just below the menu trigger bar (offset for ScrollView paddingTop and blue header)
+        left: 16,
+        width: 270,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        overflow: 'hidden',
+        elevation: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.18,
+        shadowRadius: 20,
+        transformOrigin: 'top left',
+    },
+    menuHeader: {
+        flexDirection: 'row', alignItems: 'center',
+        padding: 14, gap: 10,
+    },
+    menuAvatar: {
+        width: 38, height: 38, borderRadius: 19,
+        backgroundColor: '#1A3A6B',
+        alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+    },
+    menuAvatarText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+    menuHeaderInfo: { flex: 1 },
+    menuFacultyName: { fontSize: 13, fontWeight: '700', color: '#1A3A6B' },
+    menuFacultyDept: { fontSize: 10, color: '#A0AEC0', marginTop: 1 },
+    menuCloseBtn: {
+        width: 28, height: 28, borderRadius: 14,
+        backgroundColor: '#F7FAFC',
+        alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+    },
+    menuDivider: { height: 1, backgroundColor: '#EDF2F7' },
+    menuItem: {
+        flexDirection: 'row', alignItems: 'center',
+        paddingVertical: 11, paddingHorizontal: 14, gap: 10,
+    },
+    menuItemIcon: {
+        width: 32, height: 32, borderRadius: 9,
+        backgroundColor: '#EBF8FF',
+        alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+    },
+    menuItemContent: { flex: 1 },
+    menuItemLabel: { fontSize: 13, fontWeight: '700', color: '#2D3748' },
+    menuItemSub: { fontSize: 10, color: '#A0AEC0', marginTop: 1 },
+    menuItemBadge: {
+        backgroundColor: '#E53E3E', borderRadius: 9,
+        minWidth: 18, height: 18,
+        alignItems: 'center', justifyContent: 'center',
+        paddingHorizontal: 5,
+    },
+    menuItemBadgeText: { fontSize: 10, fontWeight: '800', color: '#fff' },
+    menuItemDivider: { height: 1, backgroundColor: '#F7FAFC', marginLeft: 56 },
+    menuLogout: {
+        flexDirection: 'row', alignItems: 'center',
+        gap: 10, padding: 14,
+    },
+    menuLogoutText: { fontSize: 13, fontWeight: '700', color: '#E53E3E' },
 });
 
 export default DashboardScreen;

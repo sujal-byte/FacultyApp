@@ -1,4 +1,3 @@
-// src/navigation/AppNavigator.tsx
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
@@ -10,15 +9,12 @@ import AnnouncementsScreen from '../screens/AnnouncementsScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
-const AppNavigator: React.FC = () => {
+export default function AppNavigator() {
     return (
         <Stack.Navigator
             initialRouteName="Login"
             screenOptions={{
                 headerShown: false,
-                cardStyle: { backgroundColor: '#F0F4F8' },
-                gestureEnabled: true,
-                animation: 'default',
             }}
         >
             <Stack.Screen name="Login" component={LoginScreen} />
@@ -28,6 +24,4 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="Announcements" component={AnnouncementsScreen} />
         </Stack.Navigator>
     );
-};
-
-export default AppNavigator;
+}
