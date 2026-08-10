@@ -98,6 +98,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                     {/* Notifications */}
                     <TouchableOpacity
                         style={styles.headerIconBtn}
+                        onPress={() => navigation.navigate('Announcements', { faculty })}
                         accessibilityLabel="Notifications"
                     >
                         <Bell size={20} color="#FFFFFF" strokeWidth={2} />
@@ -174,9 +175,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                         iconBg="#FFFFF0"
                         badgeCount={unreadCount}
                         subtitle="2 unread"
-                        onPress={() =>
-                            console.log('Navigate to Announcements — wire up with Stack.Screen')
-                        }
+                        onPress={() => navigation.navigate('Announcements', { faculty })}
                     />
                     <DashboardCard
                         title="Mapping of Courses"
@@ -194,9 +193,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                         iconColor="#276749"
                         iconBg="#F0FFF4"
                         subtitle="6 slots/week"
-                        onPress={() =>
-                            console.log('Navigate to Timetable — wire up with Stack.Screen')
-                        }
+                        onPress={() => navigation.navigate('Timetable', { faculty })}
                     />
                 </View>
 

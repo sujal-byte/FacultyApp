@@ -13,12 +13,12 @@ export interface Submission {
     courseCode: string;
     courseName: string;
     title: string;
-    dueDate: string;         // ISO date string "YYYY-MM-DD"
-    dueDateDisplay: string;  // Human-readable "DD MMM YYYY"
+    dueDate: string;
+    dueDateDisplay: string;
     totalStudents: number;
     submittedCount: number;
     type: 'assignment' | 'project' | 'quiz' | 'lab';
-    urgent: boolean;         // true if due within 3 days
+    urgent: boolean;
 }
 
 export interface Announcement {
@@ -50,6 +50,8 @@ export interface TimetableSlot {
     startTime: string;
     endTime: string;
     room: string;
+    section: string;
+    type: 'lecture' | 'lab' | 'free';
 }
 
 export interface FeedbackPayload {
@@ -63,7 +65,6 @@ export type RootStackParamList = {
     Login: undefined;
     Dashboard: { faculty: Faculty };
     Feedback: { facultyId: string };
-    Announcements: undefined;
-    Courses: undefined;
-    Timetable: undefined;
+    Timetable: { faculty: Faculty };
+    Announcements: { faculty: Faculty };
 };
