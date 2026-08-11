@@ -18,6 +18,8 @@ import {
     Bell,
     LogOut,
     LayoutGrid,
+    MessageSquare,
+    ClipboardList,
 } from 'lucide-react-native';
 
 export default function AdminDashboardScreen({ navigation }: any) {
@@ -120,7 +122,7 @@ export default function AdminDashboardScreen({ navigation }: any) {
                 <View style={styles.grid}>
                     <TouchableOpacity
                         style={styles.actionCard}
-                        onPress={() => alert('Manage Users screen coming soon!')}
+                        onPress={() => navigation.navigate('UserAccounts')}
                     >
                         <View style={[styles.iconWrap, { backgroundColor: '#EBF8FF' }]}>
                             <Users size={20} color="#3182CE" />
@@ -131,7 +133,7 @@ export default function AdminDashboardScreen({ navigation }: any) {
 
                     <TouchableOpacity
                         style={styles.actionCard}
-                        onPress={() => alert('Audit logs coming soon!')}
+                        onPress={() => navigation.navigate('AuditLogs')}
                     >
                         <View style={[styles.iconWrap, { backgroundColor: '#FAF5FF' }]}>
                             <ShieldAlert size={20} color="#6B46C1" />
@@ -142,7 +144,7 @@ export default function AdminDashboardScreen({ navigation }: any) {
 
                     <TouchableOpacity
                         style={styles.actionCard}
-                        onPress={() => alert('Broadcast announcements coming soon!')}
+                        onPress={() => navigation.navigate('BroadcastNotice')}
                     >
                         <View style={[styles.iconWrap, { backgroundColor: '#FFFFF0' }]}>
                             <Bell size={20} color="#D69E2E" />
@@ -153,13 +155,35 @@ export default function AdminDashboardScreen({ navigation }: any) {
 
                     <TouchableOpacity
                         style={styles.actionCard}
-                        onPress={() => alert('System reports coming soon!')}
+                        onPress={() => navigation.navigate('Reports')}
                     >
-                        <View style={[styles.iconWrap, { backgroundColor: '#F0FFF4' }]}>
-                            <FileText size={20} color="#276749" />
+                        <View style={[styles.iconWrap, { backgroundColor: '#FFF5F5' }]}>
+                            <FileText size={20} color="#E53E3E" />
                         </View>
                         <Text style={styles.actionTitle}>Reports</Text>
                         <Text style={styles.actionDesc}>Generate attendance & academic reports</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.actionCard}
+                        onPress={() => navigation.navigate('AdminFeedback')}
+                    >
+                        <View style={[styles.iconWrap, { backgroundColor: '#F0FFF4' }]}>
+                            <MessageSquare size={20} color="#2F855A" />
+                        </View>
+                        <Text style={styles.actionTitle}>Faculty Feedback</Text>
+                        <Text style={styles.actionDesc}>View and respond to faculty reports</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.actionCard}
+                        onPress={() => navigation.navigate('AdminQuiz')}
+                    >
+                        <View style={[styles.iconWrap, { backgroundColor: '#EBF8FF' }]}>
+                            <ClipboardList size={20} color="#2B6CB0" />
+                        </View>
+                        <Text style={styles.actionTitle}>Manage Quizzes</Text>
+                        <Text style={styles.actionDesc}>Create & monitor college-wide exams</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

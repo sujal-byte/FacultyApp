@@ -88,6 +88,12 @@ export type RootStackParamList = {
     Login: undefined;
     Dashboard: { faculty: Faculty };
     AdminDashboard: undefined;
+    UserAccounts: undefined;
+    BroadcastNotice: undefined;
+    AuditLogs: undefined;
+    Reports: undefined;
+    AdminFeedback: undefined;
+    AdminQuiz: undefined;
     Feedback: { facultyId: string };
     Timetable: { faculty: Faculty };
     Announcements: { faculty: Faculty };
