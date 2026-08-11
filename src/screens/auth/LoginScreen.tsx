@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, Alert, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { api } from '../../services/api';
+import { Calendar as CalendarIcon } from 'lucide-react-native';
+import DobPickerModal from '../../components/DobPickerModal';
 
 export default function LoginScreen({ navigation }: any) {
     const [usn, setUsn] = useState('');
     const [dob, setDob] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showDobPicker, setShowDobPicker] = useState(false);
 
     const handleLogin = async () => {
         if (!usn || !dob) {
@@ -60,13 +63,30 @@ export default function LoginScreen({ navigation }: any) {
                     style={styles.input}
                 />
 
-                <TextInput
-                    placeholder="Date of Birth (e.g. 2004-01-15)"
-                    placeholderTextColor="#888"
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        placeholder="Date of Birth (e.g. 15/01/2004)"
+                        placeholderTextColor="#888"
+                        value={dob}
+                        onChangeText={setDob}
+                        autoCapitalize="none"
+                        style={styles.inputInside}
+                    />
+                    <TouchableOpacity
+                        style={styles.iconButton}
+                        onPress={() => setShowDobPicker(true)}
+                        accessibilityLabel="Open date of birth picker"
+                        accessibilityRole="button"
+                    >
+                        <CalendarIcon size={20} color="#64748b" />
+                    </TouchableOpacity>
+                </View>
+
+                <DobPickerModal
+                    visible={showDobPicker}
+                    onClose={() => setShowDobPicker(false)}
+                    onSelectDate={setDob}
                     value={dob}
-                    onChangeText={setDob}
-                    autoCapitalize="none"
-                    style={styles.input}
                 />
 
                 <TouchableOpacity
@@ -120,6 +140,27 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         fontSize: 16,
         color: '#334155',
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        borderWidth: 1,
+        borderColor: '#cbd5e1',
+        borderRadius: 10,
+        marginBottom: 16,
+        paddingHorizontal: 14,
+    },
+    inputInside: {
+        flex: 1,
+        paddingVertical: 14,
+        fontSize: 16,
+        color: '#334155',
+    },
+    iconButton: {
+        marginLeft: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     button: {
         backgroundColor: '#2563eb',
