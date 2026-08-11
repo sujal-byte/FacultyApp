@@ -54,6 +54,20 @@ export interface TimetableSlot {
     type: 'lecture' | 'lab' | 'free';
 }
 
+export interface LeaveApplication {
+    id: string;
+    fromDate: string;
+    toDate: string;
+    fromDateDisplay: string;
+    toDateDisplay: string;
+    days: number;
+    reason: string;
+    type: 'casual' | 'medical' | 'emergency' | 'personal';
+    status: 'approved' | 'pending' | 'rejected';
+    appliedOn: string;
+    remarks?: string;
+}
+
 export interface FeedbackPayload {
     facultyId: string;
     category: 'bug' | 'suggestion' | 'question' | 'other';
@@ -67,4 +81,5 @@ export type RootStackParamList = {
     Feedback: { facultyId: string };
     Timetable: { faculty: Faculty };
     Announcements: { faculty: Faculty };
+    LeaveApplication: { faculty: Faculty };
 };

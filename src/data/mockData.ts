@@ -1,5 +1,5 @@
 // src/data/mockData.ts
-import { Submission, Announcement, Course, TimetableSlot, Faculty } from '../types';
+import { Submission, Announcement, Course, TimetableSlot, Faculty, LeaveApplication } from '../types';
 
 export const DEMO_FACULTY: Faculty = {
     id: 'FAC-2024-0042',
@@ -252,3 +252,96 @@ export const TIMETABLE: TimetableSlot[] = [
     { id: 'tt-sat-6', courseCode: 'FREE', courseName: 'Free Period', day: 'Sat', startTime: '15:00', endTime: '15:55', room: '—', section: '—', type: 'free' },
     { id: 'tt-sat-7', courseCode: 'FREE', courseName: 'Free Period', day: 'Sat', startTime: '15:55', endTime: '16:50', room: '—', section: '—', type: 'free' },
 ];
+
+export const LEAVE_APPLICATIONS: LeaveApplication[] = [
+    {
+        id: 'lv-001',
+        fromDate: '2025-01-06',
+        toDate: '2025-01-06',
+        fromDateDisplay: '06 Jan 2025',
+        toDateDisplay: '06 Jan 2025',
+        days: 1,
+        reason: 'Personal work — bank-related documentation and property registration.',
+        type: 'personal',
+        status: 'approved',
+        appliedOn: '2025-01-04',
+        remarks: 'Approved by HoD.',
+    },
+    {
+        id: 'lv-002',
+        fromDate: '2024-12-23',
+        toDate: '2024-12-24',
+        fromDateDisplay: '23 Dec 2024',
+        toDateDisplay: '24 Dec 2024',
+        days: 2,
+        reason: 'Medical — follow-up consultation and lab tests at Apollo Hospital.',
+        type: 'medical',
+        status: 'approved',
+        appliedOn: '2024-12-21',
+        remarks: 'Approved. Medical certificate submitted.',
+    },
+    {
+        id: 'lv-003',
+        fromDate: '2024-12-10',
+        toDate: '2024-12-10',
+        fromDateDisplay: '10 Dec 2024',
+        toDateDisplay: '10 Dec 2024',
+        days: 1,
+        reason: 'Family emergency — urgent travel to hometown.',
+        type: 'emergency',
+        status: 'approved',
+        appliedOn: '2024-12-10',
+        remarks: 'Approved on compassionate grounds.',
+    },
+    {
+        id: 'lv-004',
+        fromDate: '2024-11-18',
+        toDate: '2024-11-19',
+        fromDateDisplay: '18 Nov 2024',
+        toDateDisplay: '19 Nov 2024',
+        days: 2,
+        reason: 'Attending sister\'s wedding ceremony and related functions.',
+        type: 'casual',
+        status: 'approved',
+        appliedOn: '2024-11-10',
+    },
+    {
+        id: 'lv-005',
+        fromDate: '2024-10-28',
+        toDate: '2024-10-28',
+        fromDateDisplay: '28 Oct 2024',
+        toDateDisplay: '28 Oct 2024',
+        days: 1,
+        reason: 'Casual leave for Diwali celebrations and family commitments.',
+        type: 'casual',
+        status: 'approved',
+        appliedOn: '2024-10-25',
+    },
+    {
+        id: 'lv-006',
+        fromDate: '2024-09-14',
+        toDate: '2024-09-14',
+        fromDateDisplay: '14 Sep 2024',
+        toDateDisplay: '14 Sep 2024',
+        days: 1,
+        reason: 'Medical — fever and viral infection, doctor advised rest.',
+        type: 'medical',
+        status: 'approved',
+        appliedOn: '2024-09-14',
+        remarks: 'Self-certified. Approved.',
+    },
+    {
+        id: 'lv-007',
+        fromDate: '2025-01-25',
+        toDate: '2025-01-26',
+        fromDateDisplay: '25 Jan 2025',
+        toDateDisplay: '26 Jan 2025',
+        days: 2,
+        reason: 'Attending an international research workshop in Pune (personal capacity).',
+        type: 'casual',
+        status: 'pending',
+        appliedOn: '2025-01-20',
+    },
+];
+
+export const TOTAL_LEAVE_QUOTA = 12;

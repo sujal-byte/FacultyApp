@@ -22,7 +22,7 @@ import SubmissionItem from '../components/SubmissionItem';
 import CalendarModal from '../components/CalendarModal';
 import {
     Bell,
-    BookOpen,
+    ClipboardList,
     Calendar,
     CalendarCheck,
     ChevronRight,
@@ -219,14 +219,12 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                         onPress={() => navigation.navigate('Announcements', { faculty })}
                     />
                     <DashboardCard
-                        title="Mapping of Courses"
-                        Icon={BookOpen}
-                        iconColor="#2B6CB0"
-                        iconBg="#EBF8FF"
-                        subtitle="3 active"
-                        onPress={() =>
-                            console.log('Navigate to Course Mapping — wire up with Stack.Screen')
-                        }
+                        title="Leave Application"
+                        Icon={ClipboardList}
+                        iconColor="#6B46C1"
+                        iconBg="#FAF5FF"
+                        subtitle="5 remaining"
+                        onPress={() => navigation.navigate('LeaveApplication', { faculty })}
                     />
                     <DashboardCard
                         title="Timetable"

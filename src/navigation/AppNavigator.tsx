@@ -6,6 +6,7 @@ import DashboardScreen from '../screens/DashboardScreen';
 import FeedbackScreen from '../screens/FeedbackScreen';
 import TimetableScreen from '../screens/TimetableScreen';
 import AnnouncementsScreen from '../screens/AnnouncementsScreen';
+import LeaveApplicationScreen from '../screens/LeaveApplicationScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -22,6 +23,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Feedback" component={FeedbackScreen} />
             <Stack.Screen name="Timetable" component={TimetableScreen} />
             <Stack.Screen name="Announcements" component={AnnouncementsScreen} />
+            <Stack.Screen name="LeaveApplication" component={LeaveApplicationScreen} />
         </Stack.Navigator>
     );
 }
