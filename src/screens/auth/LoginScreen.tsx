@@ -26,7 +26,11 @@ export default function LoginScreen({ navigation }: any) {
             await SecureStore.setItemAsync('userData', JSON.stringify(response.data.user));
 
             Alert.alert('Success', `Welcome back, ${response.data.user.name}!`);
-            navigation.navigate('Dashboard');
+            if (response.data.user?.role === 'ADMIN') {
+                navigation.navigate('AdminDashboard');
+            } else {
+                navigation.navigate('Dashboard');
+            }
         } catch (error: any) {
             console.error(error);
             Alert.alert(

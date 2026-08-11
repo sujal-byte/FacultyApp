@@ -87,6 +87,7 @@ export interface FeedbackPayload {
 export type RootStackParamList = {
     Login: undefined;
     Dashboard: { faculty: Faculty };
+    AdminDashboard: undefined;
     Feedback: { facultyId: string };
     Timetable: { faculty: Faculty };
     Announcements: { faculty: Faculty };

@@ -1,4 +1,4 @@
-﻿// src/screens/faculty/FacultyDashboardScreen.tsx
+// src/screens/faculty/FacultyDashboardScreen.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
@@ -12,10 +12,12 @@ import {
     Animated,
     Easing,
     ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
-import { UPCOMING_SUBMISSIONS, ANNOUNCEMENTS } from '../../data/mockData';
+import { ANNOUNCEMENTS } from '../../data/mockData';
+import { api } from '../../services/api';
 import DashboardCard from '../../components/DashboardCard';
 import SubmissionItem from '../../components/SubmissionItem';
 import CalendarModal from '../../components/CalendarModal';
@@ -37,41 +39,13 @@ import {
 
 export default function FacultyDashboardScreen({ navigation }: any) {
     const [faculty, setFaculty] = useState<any>(null);
+    const [courses, setCourses] = useState<any[]>([]);
+    const [submissions, setSubmissions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [showCalModal, setShowCalModal] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const unreadCount = ANNOUNCEMENTS.filter((a) => !a.isRead).length;
-
-    useEffect(() => {
-        async function loadUserData() {
-            try {
-                const storedUser = await SecureStore.getItemAsync('userData');
-                if (storedUser) {
-                    const parsedUser = JSON.parse(storedUser);
-                    // Map backend data structure cleanly to match mock data expectations
-                    setFaculty({
-                        id: parsedUser.id || '1',
-                        name: parsedUser.name || 'Faculty Member',
-                        department: parsedUser.department || 'Computer Science & Engineering',
-                        usn: parsedUser.usn || 'FAC001',
-                        dob: parsedUser.dob || '2004-01-15',
-                        role: parsedUser.role || 'FACULTY',
-                    });
-                }
-            } catch (error) {
-                console.error('Failed to load user data', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        loadUserData();
-    }, []);
-
-    const onRefresh = async () => {
-        setRefreshing(true);
-        await new Promise((r) => setTimeout(r, 1200));
-        setRefreshing(false);
-    };
 
     const handleLogout = async () => {
         await SecureStore.deleteItemAsync('userToken');
@@ -80,6 +54,44 @@ export default function FacultyDashboardScreen({ navigation }: any) {
             index: 0,
             routes: [{ name: 'Login' }],
         });
+    };
+
+    const fetchData = async () => {
+        try {
+            setError(null);
+            const [profileRes, coursesRes, submissionsRes] = await Promise.all([
+                api.get('/faculty/profile'),
+                api.get('/faculty/courses'),
+                api.get('/faculty/submissions'),
+            ]);
+
+            setFaculty(profileRes.data);
+            setCourses(coursesRes.data);
+            setSubmissions(submissionsRes.data);
+        } catch (err: any) {
+            console.error('Error fetching dashboard data:', err);
+            if (err.response?.status === 401) {
+                Alert.alert('Session Expired', 'Your session has expired. Please sign in again.');
+                await handleLogout();
+            } else {
+                setError(err.response?.data?.message || err.message || 'Failed to connect to backend server. Please try again.');
+            }
+        }
+    };
+
+    useEffect(() => {
+        const loadInitialData = async () => {
+            setLoading(true);
+            await fetchData();
+            setLoading(false);
+        };
+        loadInitialData();
+    }, []);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await fetchData();
+        setRefreshing(false);
     };
 
     const today = new Date();
@@ -113,16 +125,31 @@ export default function FacultyDashboardScreen({ navigation }: any) {
         }).start(() => setMenuVisible(false));
     };
 
-    if (loading || !faculty) {
+    if (loading) {
         return (
             <View style={styles.center}>
-                <ActivityIndicator size="large" color="#2563eb" />
+                <ActivityIndicator size="large" color="#C6A800" />
+                <Text style={{ marginTop: 12, color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600' }}>Loading dashboard...</Text>
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={styles.center}>
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+                    <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.errorLogoutBtn} onPress={handleLogout}>
+                    <Text style={styles.errorLogoutText}>Logout</Text>
+                </TouchableOpacity>
             </View>
         );
     }
 
     const initials = faculty?.name
-        ? faculty.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('')
+        ? faculty.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
         : 'FM';
 
     return (
@@ -221,7 +248,7 @@ export default function FacultyDashboardScreen({ navigation }: any) {
                         onPress={() => navigation.navigate('Courses', { faculty })}
                         activeOpacity={0.7}
                     >
-                        <Text style={[styles.statNumber, { color: '#2B6CB0' }]}>3</Text>
+                        <Text style={[styles.statNumber, { color: '#2B6CB0' }]}>{courses.length}</Text>
                         <Text style={styles.statLabel}>Courses</Text>
                         <Text style={{ fontSize: 9, color: '#2B6CB0', fontWeight: '700' }}>tap →</Text>
                     </TouchableOpacity>
@@ -232,7 +259,7 @@ export default function FacultyDashboardScreen({ navigation }: any) {
                         activeOpacity={0.7}
                     >
                         <Text style={[styles.statNumber, { color: '#E53E3E' }]}>
-                            {UPCOMING_SUBMISSIONS.filter(s => s.submittedCount < s.totalStudents).length}
+                            {submissions.filter(s => s.submittedCount < s.totalStudents).length}
                         </Text>
                         <Text style={styles.statLabel}>Pending</Text>
                         <Text style={{ fontSize: 9, color: '#E53E3E', fontWeight: '700' }}>tap →</Text>
@@ -288,7 +315,7 @@ export default function FacultyDashboardScreen({ navigation }: any) {
                             <View>
                                 <Text style={styles.submissionsTitle}>Upcoming Submissions</Text>
                                 <Text style={styles.submissionsSubtitle}>
-                                    {UPCOMING_SUBMISSIONS.length} pending across all courses
+                                    {submissions.length} pending across all courses
                                 </Text>
                             </View>
                         </View>
@@ -306,12 +333,12 @@ export default function FacultyDashboardScreen({ navigation }: any) {
                     <View style={styles.urgentBanner}>
                         <Text style={styles.urgentBannerIcon}>⚠️</Text>
                         <Text style={styles.urgentBannerText}>
-                            {UPCOMING_SUBMISSIONS.filter((s) => s.urgent).length} submissions due within 3 days
+                            {submissions.filter((s) => s.urgent).length} submissions due within 3 days
                         </Text>
                     </View>
 
                     <View style={styles.submissionsList}>
-                        {UPCOMING_SUBMISSIONS.map((sub) => (
+                        {submissions.map((sub) => (
                             <TouchableOpacity
                                 key={sub.id}
                                 onPress={() => navigation.navigate('Submissions', { faculty })}
@@ -902,4 +929,41 @@ const styles = StyleSheet.create({
         gap: 10, padding: 14,
     },
     menuLogoutText: { fontSize: 13, fontWeight: '700', color: '#E53E3E' },
+    errorText: {
+        fontSize: 14,
+        color: '#FED7D7',
+        textAlign: 'center',
+        marginHorizontal: 32,
+        marginBottom: 20,
+        fontWeight: '600',
+        lineHeight: 20,
+    },
+    retryButton: {
+        backgroundColor: '#C6A800',
+        paddingVertical: 12,
+        paddingHorizontal: 28,
+        borderRadius: 24,
+        elevation: 4,
+        shadowColor: '#C6A800',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+    },
+    retryButtonText: {
+        color: '#FFFFFF',
+        fontWeight: '700',
+        fontSize: 14,
+        letterSpacing: 0.5,
+    },
+    errorLogoutBtn: {
+        marginTop: 20,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+    },
+    errorLogoutText: {
+        color: '#E53E3E',
+        fontWeight: '700',
+        fontSize: 13,
+        textDecorationLine: 'underline',
+    },
 });
