@@ -191,10 +191,17 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                         <Text style={{ fontSize: 9, color: '#2B6CB0', fontWeight: '700' }}>tap →</Text>
                     </TouchableOpacity>
                     <View style={styles.statDivider} />
-                    <View style={styles.statChip}>
-                        <Text style={[styles.statNumber, { color: '#E53E3E' }]}>4</Text>
+                    <TouchableOpacity
+                        style={styles.statChip}
+                        onPress={() => navigation.navigate('Submissions', { faculty })}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.statNumber, { color: '#E53E3E' }]}>
+                            {UPCOMING_SUBMISSIONS.filter(s => s.submittedCount < s.totalStudents).length}
+                        </Text>
                         <Text style={styles.statLabel}>Pending</Text>
-                    </View>
+                        <Text style={{ fontSize: 9, color: '#E53E3E', fontWeight: '700' }}>tap →</Text>
+                    </TouchableOpacity>
                     <View style={styles.statDivider} />
                     <View style={styles.statChip}>
                         <Text style={styles.statNumber}>18h</Text>
@@ -253,6 +260,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                         </View>
                         <TouchableOpacity
                             style={styles.seeAllBtn}
+                            onPress={() => navigation.navigate('Submissions', { faculty })}
                             accessibilityRole="button"
                             accessibilityLabel="See all submissions"
                         >
@@ -272,7 +280,13 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                     {/* Submission List */}
                     <View style={styles.submissionsList}>
                         {UPCOMING_SUBMISSIONS.map((sub) => (
-                            <SubmissionItem key={sub.id} submission={sub} />
+                            <TouchableOpacity
+                                key={sub.id}
+                                onPress={() => navigation.navigate('Submissions', { faculty })}
+                                activeOpacity={0.85}
+                            >
+                                <SubmissionItem submission={sub} />
+                            </TouchableOpacity>
                         ))}
                     </View>
                 </View>
