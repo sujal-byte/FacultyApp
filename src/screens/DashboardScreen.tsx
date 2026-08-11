@@ -100,7 +100,13 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
 
             {/* Top Header */}
             <View style={styles.topHeader}>
-                <View style={styles.headerLeft}>
+                <TouchableOpacity
+                    style={styles.headerLeft}
+                    onPress={() => navigation.navigate('Profile', { faculty })}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="View profile"
+                >
                     <View style={styles.avatar}>
                         <Text style={styles.avatarText}>
                             {faculty.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
@@ -112,7 +118,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                             {faculty.name}
                         </Text>
                     </View>
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.headerRight}>
                     {/* Calendar Button */}
@@ -367,7 +373,16 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                         }]}
                     >
                         {/* Header */}
-                        <View style={styles.menuHeader}>
+                        <TouchableOpacity
+                            style={styles.menuHeader}
+                            onPress={() => {
+                                closeMenu();
+                                navigation.navigate('Profile', { faculty });
+                            }}
+                            activeOpacity={0.7}
+                            accessibilityRole="button"
+                            accessibilityLabel="View profile"
+                        >
                             <View style={styles.menuAvatar}>
                                 <Text style={styles.menuAvatarText}>
                                     {faculty.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
@@ -380,9 +395,25 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
                             <TouchableOpacity style={styles.menuCloseBtn} onPress={closeMenu}>
                                 <X size={14} color="#A0AEC0" />
                             </TouchableOpacity>
-                        </View>
+                        </TouchableOpacity>
 
                         <View style={styles.menuDivider} />
+
+                        {/* Menu Item: Profile */}
+                        <TouchableOpacity style={styles.menuItem} onPress={() => {
+                            closeMenu();
+                            navigation.navigate('Profile', { faculty });
+                        }}>
+                            <View style={styles.menuItemIcon}>
+                                <User size={16} color="#3182CE" />
+                            </View>
+                            <View style={styles.menuItemContent}>
+                                <Text style={styles.menuItemLabel}>My Profile</Text>
+                                <Text style={styles.menuItemSub}>Credentials & personal info</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <View style={styles.menuItemDivider} />
 
                         {/* Menu Item 1: Timetable */}
                         <TouchableOpacity style={styles.menuItem} onPress={() => {

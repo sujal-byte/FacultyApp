@@ -7,6 +7,15 @@ export const DEMO_FACULTY: Faculty = {
     department: 'Computer Science & Engineering',
     designation: 'Associate Professor',
     email: 'priya.nair@college.edu.in',
+    phone: '+91 98765 43210',
+    officeRoom: 'Cabin 402, Ramanujan Block',
+    joiningDate: '12th July 2018',
+    dob: '15/03/1985',
+    gender: 'Female',
+    qualification: 'Ph.D. in Computer Science',
+    specialization: 'Machine Learning & Image Processing',
+    experience: '12 Years',
+    portalPin: '1503',
 };
 
 export const VALID_CREDENTIALS = {

@@ -6,6 +6,15 @@ export interface Faculty {
     department: string;
     designation: string;
     email: string;
+    phone?: string;
+    officeRoom?: string;
+    joiningDate?: string;
+    dob?: string;
+    gender?: string;
+    qualification?: string;
+    specialization?: string;
+    experience?: string;
+    portalPin?: string;
 }
 
 export interface Submission {
@@ -84,4 +93,5 @@ export type RootStackParamList = {
     LeaveApplication: { faculty: Faculty };
     Courses: { faculty: Faculty };
     Submissions: { faculty: Faculty };
+    Profile: { faculty: Faculty };
 };

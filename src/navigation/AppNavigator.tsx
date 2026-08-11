@@ -9,6 +9,7 @@ import AnnouncementsScreen from '../screens/AnnouncementsScreen';
 import LeaveApplicationScreen from '../screens/LeaveApplicationScreen';
 import CoursesScreen from '../screens/CoursesScreen';
 import SubmissionsScreen from '../screens/SubmissionsScreen';
+import ProfileScreen from '../screens/ProfileScreen'; // profile screen component for faculty
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -28,6 +29,7 @@ export default function AppNavigator() {
             <Stack.Screen name="LeaveApplication" component={LeaveApplicationScreen} />
             <Stack.Screen name="Courses" component={CoursesScreen} />
             <Stack.Screen name="Submissions" component={SubmissionsScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
         </Stack.Navigator>
     );
 }
