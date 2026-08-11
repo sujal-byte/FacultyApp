@@ -11,8 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList, Submission } from '../types';
-import { UPCOMING_SUBMISSIONS } from '../data/mockData';
+import { RootStackParamList, Submission } from '../../types';
+import { UPCOMING_SUBMISSIONS } from '../../data/mockData';
 import {
     ArrowLeft,
     Clock,
@@ -61,18 +61,18 @@ const SubmissionsScreen: React.FC<Props> = ({ navigation, route }) => {
     const { faculty } = route.params;
     const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
 
-    const filtered = UPCOMING_SUBMISSIONS.filter(s => {
+    const filtered = UPCOMING_SUBMISSIONS.filter((s: Submission) => {
         if (activeFilter === 'all') return true;
         if (activeFilter === 'urgent') return s.urgent;
         return s.type === activeFilter;
     });
 
-    const urgentCount = UPCOMING_SUBMISSIONS.filter(s => s.urgent).length;
+    const urgentCount = UPCOMING_SUBMISSIONS.filter((s: Submission) => s.urgent).length;
     const pendingCount = UPCOMING_SUBMISSIONS.filter(
-        s => s.submittedCount < s.totalStudents
+        (s: Submission) => s.submittedCount < s.totalStudents
     ).length;
-    const totalStudents = UPCOMING_SUBMISSIONS.reduce((a, s) => a + s.totalStudents, 0);
-    const totalSubmitted = UPCOMING_SUBMISSIONS.reduce((a, s) => a + s.submittedCount, 0);
+    const totalStudents = UPCOMING_SUBMISSIONS.reduce((a: number, s: Submission) => a + s.totalStudents, 0);
+    const totalSubmitted = UPCOMING_SUBMISSIONS.reduce((a: number, s: Submission) => a + s.submittedCount, 0);
     const overallProgress = Math.round((totalSubmitted / totalStudents) * 100);
 
     return (
@@ -147,7 +147,7 @@ const SubmissionsScreen: React.FC<Props> = ({ navigation, route }) => {
                             ? UPCOMING_SUBMISSIONS.length
                             : f.key === 'urgent'
                                 ? urgentCount
-                                : UPCOMING_SUBMISSIONS.filter(s => s.type === f.key).length;
+                                : UPCOMING_SUBMISSIONS.filter((s: Submission) => s.type === f.key).length;
                         return (
                             <TouchableOpacity
                                 key={f.key}
@@ -182,7 +182,7 @@ const SubmissionsScreen: React.FC<Props> = ({ navigation, route }) => {
                         <Text style={styles.emptyBody}>No submissions in this category.</Text>
                     </View>
                 ) : (
-                    filtered.map(sub => {
+                    filtered.map((sub: Submission) => {
                         const conf = TYPE_CONFIG[sub.type];
                         const TypeIcon = conf.Icon;
                         const progress = Math.round((sub.submittedCount / sub.totalStudents) * 100);

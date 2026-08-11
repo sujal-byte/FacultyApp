@@ -11,8 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../types';
-import { MY_COURSES } from '../data/mockData';
+import { RootStackParamList, Course } from '../../types';
+import { MY_COURSES } from '../../data/mockData';
 import {
     ArrowLeft,
     BookOpen,
@@ -39,8 +39,8 @@ const COURSE_COLORS = [
 
 const CoursesScreen: React.FC<Props> = ({ navigation, route }) => {
     const { faculty } = route.params;
-    const totalStudents = MY_COURSES.reduce((s, c) => s + c.enrolledCount, 0);
-    const totalCredits = MY_COURSES.reduce((s, c) => s + c.credits, 0);
+    const totalStudents = MY_COURSES.reduce((s: number, c: Course) => s + c.enrolledCount, 0);
+    const totalCredits = MY_COURSES.reduce((s: number, c: Course) => s + c.credits, 0);
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -95,7 +95,7 @@ const CoursesScreen: React.FC<Props> = ({ navigation, route }) => {
                     Courses assigned to {faculty.name}
                 </Text>
 
-                {MY_COURSES.map((course, idx) => {
+                {MY_COURSES.map((course: Course, idx: number) => {
                     const colors = COURSE_COLORS[idx % COURSE_COLORS.length];
                     return (
                         <View

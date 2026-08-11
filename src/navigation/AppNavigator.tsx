@@ -1,15 +1,15 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
-import LoginScreen from '../screens/LoginScreen';
-import DashboardScreen from '../screens/DashboardScreen';
-import FeedbackScreen from '../screens/FeedbackScreen';
-import TimetableScreen from '../screens/TimetableScreen';
-import AnnouncementsScreen from '../screens/AnnouncementsScreen';
-import LeaveApplicationScreen from '../screens/LeaveApplicationScreen';
-import CoursesScreen from '../screens/CoursesScreen';
-import SubmissionsScreen from '../screens/SubmissionsScreen';
-import ProfileScreen from '../screens/ProfileScreen'; // profile screen component for faculty
+import LoginScreen from '../screens/auth/LoginScreen';
+import DashboardScreen from '../screens/faculty/FacultyDashboardScreen';
+import FeedbackScreen from '../screens/faculty/FeedbackScreen';
+import TimetableScreen from '../screens/faculty/TimetableScreen';
+import AnnouncementsScreen from '../screens/faculty/AnnouncementsScreen';
+import LeaveApplicationScreen from '../screens/faculty/LeaveApplicationScreen';
+import CoursesScreen from '../screens/faculty/CoursesScreen';
+import SubmissionsScreen from '../screens/faculty/SubmissionsScreen';
+import ProfileScreen from '../screens/faculty/ProfileScreen'; // profile screen component for faculty
 
 const Stack = createStackNavigator<RootStackParamList>();
 

@@ -12,8 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList, TimetableSlot } from '../types';
-import { TIMETABLE } from '../data/mockData';
+import { RootStackParamList, TimetableSlot } from '../../types';
+import { TIMETABLE } from '../../data/mockData';
 import { ArrowLeft, Clock, MapPin, Users, BookOpen } from 'lucide-react-native';
 
 type TimetableNav = StackNavigationProp<RootStackParamList, 'Timetable'>;
@@ -65,12 +65,12 @@ const TimetableScreen: React.FC<Props> = ({ navigation, route }) => {
         todayIndex >= 1 && todayIndex <= 6 ? DAYS[todayIndex - 1] : 'Mon';
     const [selectedDay, setSelectedDay] = useState<TimetableSlot['day']>(defaultDay);
 
-    const daySlots = TIMETABLE.filter((s) => s.day === selectedDay);
+    const daySlots = TIMETABLE.filter((s: TimetableSlot) => s.day === selectedDay);
 
     const getSlot = (start: string): TimetableSlot | undefined =>
-        daySlots.find((s) => s.startTime === start);
+        daySlots.find((s: TimetableSlot) => s.startTime === start);
 
-    const totalClasses = daySlots.filter((s) => s.type !== 'free').length;
+    const totalClasses = daySlots.filter((s: TimetableSlot) => s.type !== 'free').length;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -261,9 +261,9 @@ const TimetableScreen: React.FC<Props> = ({ navigation, route }) => {
                     <Text style={styles.summaryTitle}>Day Summary</Text>
                     <View style={styles.summaryRow}>
                         {[
-                            { label: 'Lectures', count: daySlots.filter(s => s.type === 'lecture').length, color: '#2B6CB0' },
-                            { label: 'Labs', count: daySlots.filter(s => s.type === 'lab').length, color: '#6B46C1' },
-                            { label: 'Free', count: daySlots.filter(s => s.type === 'free').length, color: '#A0AEC0' },
+                            { label: 'Lectures', count: daySlots.filter((s: TimetableSlot) => s.type === 'lecture').length, color: '#2B6CB0' },
+                            { label: 'Labs', count: daySlots.filter((s: TimetableSlot) => s.type === 'lab').length, color: '#6B46C1' },
+                            { label: 'Free', count: daySlots.filter((s: TimetableSlot) => s.type === 'free').length, color: '#A0AEC0' },
                         ].map((item) => (
                             <View key={item.label} style={styles.summaryItem}>
                                 <Text style={[styles.summaryCount, { color: item.color }]}>{item.count}</Text>

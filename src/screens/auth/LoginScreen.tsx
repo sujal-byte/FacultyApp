@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, Alert, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { api } from '../services/api';
+import { api } from '../../services/api';
 
 export default function LoginScreen({ navigation }: any) {
     const [usn, setUsn] = useState('');

@@ -15,8 +15,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../types';
-import { DEMO_FACULTY } from '../data/mockData';
+import { RootStackParamList } from '../../types';
+import { DEMO_FACULTY } from '../../data/mockData';
 import {
     ArrowLeft,
     User,

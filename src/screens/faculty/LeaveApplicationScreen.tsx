@@ -17,8 +17,8 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList, LeaveApplication } from '../types';
-import { LEAVE_APPLICATIONS, TOTAL_LEAVE_QUOTA } from '../data/mockData';
+import { RootStackParamList, LeaveApplication } from '../../types';
+import { LEAVE_APPLICATIONS, TOTAL_LEAVE_QUOTA } from '../../data/mockData';
 import {
     ArrowLeft,
     Calendar,
@@ -41,14 +41,14 @@ interface Props {
     route: LeaveRoute;
 }
 
-const TYPE_CONFIG = {
+const TYPE_CONFIG: Record<LeaveApplication['type'], { label: string; color: string; bg: string; badgeBg: string }> = {
     casual: { label: 'Casual', color: '#2B6CB0', bg: '#EBF8FF', badgeBg: '#BEE3F8' },
     medical: { label: 'Medical', color: '#276749', bg: '#F0FFF4', badgeBg: '#C6F6D5' },
     emergency: { label: 'Emergency', color: '#E53E3E', bg: '#FFF5F5', badgeBg: '#FED7D7' },
     personal: { label: 'Personal', color: '#B7791F', bg: '#FFFFF0', badgeBg: '#FEFCBF' },
 };
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<LeaveApplication['status'], { label: string; color: string; bg: string; Icon: any }> = {
     approved: { label: 'Approved', color: '#276749', bg: '#F0FFF4', Icon: CheckCircle },
     pending: { label: 'Pending', color: '#B7791F', bg: '#FFFFF0', Icon: Clock },
     rejected: { label: 'Rejected', color: '#E53E3E', bg: '#FFF5F5', Icon: XCircle },

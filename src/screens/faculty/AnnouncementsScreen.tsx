@@ -14,8 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList, Announcement } from '../types';
-import { ANNOUNCEMENTS } from '../data/mockData';
+import { RootStackParamList, Announcement } from '../../types';
+import { ANNOUNCEMENTS } from '../../data/mockData';
 import {
     ArrowLeft,
     Bell,
@@ -240,7 +240,7 @@ const AnnouncementsScreen: React.FC<Props> = ({ navigation, route }) => {
                 <View style={styles.summaryDiv} />
                 <View style={styles.summaryItem}>
                     <Text style={[styles.summaryNum, { color: '#F6E05E' }]}>
-                        {ANNOUNCEMENTS.filter(a => a.category === 'academic').length}
+                        {ANNOUNCEMENTS.filter((a: Announcement) => a.category === 'academic').length}
                     </Text>
                     <Text style={styles.summaryLbl}>Academic</Text>
                 </View>
@@ -300,7 +300,7 @@ const AnnouncementsScreen: React.FC<Props> = ({ navigation, route }) => {
                         <Text style={styles.emptyBody}>Nothing here in this category right now.</Text>
                     </View>
                 ) : (
-                    filtered.map((item) => (
+                    filtered.map((item: Announcement) => (
                         <AnnouncementCard key={item.id} item={item} />
                     ))
                 )}
