@@ -82,4 +82,5 @@ export type RootStackParamList = {
     Timetable: { faculty: Faculty };
     Announcements: { faculty: Faculty };
     LeaveApplication: { faculty: Faculty };
+    Courses: { faculty: Faculty };
 };

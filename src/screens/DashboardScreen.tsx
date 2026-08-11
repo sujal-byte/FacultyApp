@@ -181,15 +181,15 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
 
                 {/* Quick Stats Row */}
                 <View style={styles.statsRow}>
-                    <View style={styles.statChip}>
-                        <Text style={styles.statNumber}>3</Text>
+                    <TouchableOpacity
+                        style={styles.statChip}
+                        onPress={() => navigation.navigate('Courses', { faculty })}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.statNumber, { color: '#2B6CB0' }]}>3</Text>
                         <Text style={styles.statLabel}>Courses</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statChip}>
-                        <Text style={styles.statNumber}>165</Text>
-                        <Text style={styles.statLabel}>Students</Text>
-                    </View>
+                        <Text style={{ fontSize: 9, color: '#2B6CB0', fontWeight: '700' }}>tap →</Text>
+                    </TouchableOpacity>
                     <View style={styles.statDivider} />
                     <View style={styles.statChip}>
                         <Text style={[styles.statNumber, { color: '#E53E3E' }]}>4</Text>
