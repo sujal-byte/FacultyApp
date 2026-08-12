@@ -56,8 +56,11 @@ export default function FacultyDashboardScreen({ navigation }: any) {
         });
     };
 
-    const fetchData = async () => {
+    const fetchData = async (showLoadingSpinner = true) => {
         try {
+            if (showLoadingSpinner) {
+                setLoading(true);
+            }
             setError(null);
             const [profileRes, coursesRes, submissionsRes] = await Promise.all([
                 api.get('/faculty/profile'),
@@ -76,21 +79,20 @@ export default function FacultyDashboardScreen({ navigation }: any) {
             } else {
                 setError(err.response?.data?.message || err.message || 'Failed to connect to backend server. Please try again.');
             }
+        } finally {
+            if (showLoadingSpinner) {
+                setLoading(false);
+            }
         }
     };
 
     useEffect(() => {
-        const loadInitialData = async () => {
-            setLoading(true);
-            await fetchData();
-            setLoading(false);
-        };
-        loadInitialData();
+        fetchData(true);
     }, []);
 
     const onRefresh = async () => {
         setRefreshing(true);
-        await fetchData();
+        await fetchData(false);
         setRefreshing(false);
     };
 
@@ -138,7 +140,7 @@ export default function FacultyDashboardScreen({ navigation }: any) {
         return (
             <View style={styles.center}>
                 <Text style={styles.errorText}>{error}</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+                <TouchableOpacity style={styles.retryButton} onPress={() => fetchData()}>
                     <Text style={styles.retryButtonText}>Retry</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.errorLogoutBtn} onPress={handleLogout}>
@@ -171,7 +173,7 @@ export default function FacultyDashboardScreen({ navigation }: any) {
                     <View>
                         <Text style={styles.greetingText}>{greeting},</Text>
                         <Text style={styles.facultyName} numberOfLines={1}>
-                            {faculty.name}
+                            {faculty?.name || 'Faculty Member'}
                         </Text>
                     </View>
                 </TouchableOpacity>
@@ -215,7 +217,7 @@ export default function FacultyDashboardScreen({ navigation }: any) {
             <View style={styles.subtitleBar}>
                 <View style={styles.deptPill}>
                     <Text style={styles.deptPillText} numberOfLines={1}>
-                        {faculty.department}
+                        {faculty?.department || 'Department'}
                     </Text>
                 </View>
                 <Text style={styles.dateText}>{dateString}</Text>
@@ -391,7 +393,7 @@ export default function FacultyDashboardScreen({ navigation }: any) {
             {/* Floating Action Button */}
             <TouchableOpacity
                 style={styles.fab}
-                onPress={() => navigation.navigate('Feedback', { facultyId: faculty.id })}
+                onPress={() => navigation.navigate('Feedback', { facultyId: faculty?.id || '' })}
                 activeOpacity={0.85}
                 accessibilityRole="button"
                 accessibilityLabel="Open Feedback and Help"
@@ -434,8 +436,8 @@ export default function FacultyDashboardScreen({ navigation }: any) {
                                 <Text style={styles.menuAvatarText}>{initials}</Text>
                             </View>
                             <View style={styles.menuHeaderInfo}>
-                                <Text style={styles.menuFacultyName} numberOfLines={1}>{faculty.name}</Text>
-                                <Text style={styles.menuFacultyDept}>{faculty.department}</Text>
+                                <Text style={styles.menuFacultyName} numberOfLines={1}>{faculty?.name || 'Faculty Member'}</Text>
+                                <Text style={styles.menuFacultyDept}>{faculty?.department || ''}</Text>
                             </View>
                             <TouchableOpacity style={styles.menuCloseBtn} onPress={closeMenu}>
                                 <X size={14} color="#A0AEC0" />
@@ -496,7 +498,7 @@ export default function FacultyDashboardScreen({ navigation }: any) {
 
                         <TouchableOpacity style={styles.menuItem} onPress={() => {
                             closeMenu();
-                            navigation.navigate('Feedback', { facultyId: faculty.id });
+                            navigation.navigate('Feedback', { facultyId: faculty?.id || '' });
                         }}>
                             <View style={styles.menuItemIcon}>
                                 <MessageSquare size={16} color="#3182CE" />

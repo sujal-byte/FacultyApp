@@ -34,3 +34,28 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'FACULTY' | 'STUDENT';
+  usn: string | null;
+  department?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const adminApi = {
+  getAllUsers: async (): Promise<User[]> => {
+    const response = await api.get<User[]>('/users');
+    return response.data;
+  },
+
+  createUser: (userData: any) => api.post('/users', userData),
+
+  updateUser: (id: string, userData: any) => api.put(`/users/${id}`, userData),
+
+  deleteUser: (id: string) => api.delete(`/users/${id}`),
+};
+
