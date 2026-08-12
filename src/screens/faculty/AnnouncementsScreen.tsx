@@ -1,448 +1,222 @@
-// src/screens/AnnouncementsScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
-    ScrollView,
     StyleSheet,
+    ScrollView,
     TouchableOpacity,
     StatusBar,
-    LayoutAnimation,
-    Platform,
-    UIManager,
+    ActivityIndicator,
+    Modal,
+    TextInput,
+    Alert,
+    KeyboardAvoidingView,
+    Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList, Announcement } from '../../types';
-import { ANNOUNCEMENTS } from '../../data/mockData';
-import {
-    ArrowLeft,
-    Bell,
-    AlertTriangle,
-    CalendarDays,
-    BookOpen,
-    ChevronDown,
-    ChevronUp,
-    Clock,
-    User,
-} from 'lucide-react-native';
+import { ArrowLeft, Plus, X, Send, AlertTriangle } from 'lucide-react-native';
+import { announcementsApi } from '../../services/api';
 
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+export default function AnnouncementsScreen({ navigation }: any) {
+    const [announcements, setAnnouncements] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-type AnnouncementsNav = StackNavigationProp<RootStackParamList, 'Announcements'>;
-type AnnouncementsRoute = RouteProp<RootStackParamList, 'Announcements'>;
-
-interface Props {
-    navigation: AnnouncementsNav;
-    route: AnnouncementsRoute;
-}
-
-type TabKey = 'all' | 'important' | 'event';
-
-const TABS: { key: TabKey; label: string; icon: any }[] = [
-    { key: 'all', label: 'All', icon: Bell },
-    { key: 'important', label: 'Important', icon: AlertTriangle },
-    { key: 'event', label: 'Events', icon: CalendarDays },
-];
-
-// Per-category visual config
-const CATEGORY_CONFIG = {
-    urgent: {
-        accentColor: '#E53E3E',
-        accentBg: '#FFF5F5',
-        badgeBg: '#FED7D7',
-        badgeText: '#C53030',
-        label: 'Important',
-        Icon: AlertTriangle,
-    },
-    event: {
-        accentColor: '#276749',
-        accentBg: '#F0FFF4',
-        badgeBg: '#C6F6D5',
-        badgeText: '#22543D',
-        label: 'Event',
-        Icon: CalendarDays,
-    },
-    academic: {
-        accentColor: '#B7791F',
-        accentBg: '#FFFFF0',
-        badgeBg: '#FEFCBF',
-        badgeText: '#744210',
-        label: 'Academic',
-        Icon: BookOpen,
-    },
-    admin: {
-        accentColor: '#B7791F',
-        accentBg: '#FFFFF0',
-        badgeBg: '#FEFCBF',
-        badgeText: '#744210',
-        label: 'Admin',
-        Icon: BookOpen,
-    },
-};
-
-// Single expandable announcement card
-const AnnouncementCard: React.FC<{ item: Announcement }> = ({ item }) => {
-    const [expanded, setExpanded] = useState(false);
-    const config = CATEGORY_CONFIG[item.category] ?? CATEGORY_CONFIG.academic;
-    const IconComp = config.Icon;
-
-    const toggle = () => {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setExpanded((v) => !v);
-    };
-
-    return (
-        <TouchableOpacity
-            style={[styles.card, { backgroundColor: expanded ? config.accentBg : '#FFFFFF' }]}
-            onPress={toggle}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel={item.title}
-            accessibilityState={{ expanded }}
-        >
-            {/* Left accent bar */}
-            <View style={[styles.accentBar, { backgroundColor: config.accentColor }]} />
-
-            <View style={styles.cardInner}>
-                {/* Top row */}
-                <View style={styles.cardTopRow}>
-                    {/* Category icon circle */}
-                    <View style={[styles.categoryIconCircle, { backgroundColor: config.badgeBg }]}>
-                        <IconComp size={14} color={config.accentColor} strokeWidth={2.5} />
-                    </View>
-
-                    <View style={styles.cardMeta}>
-                        <View style={[styles.categoryBadge, { backgroundColor: config.badgeBg }]}>
-                            <Text style={[styles.categoryBadgeText, { color: config.badgeText }]}>
-                                {config.label}
-                            </Text>
-                        </View>
-                        {!item.isRead && <View style={styles.unreadDot} />}
-                    </View>
-
-                    {expanded
-                        ? <ChevronUp size={16} color="#A0AEC0" strokeWidth={2} />
-                        : <ChevronDown size={16} color="#A0AEC0" strokeWidth={2} />
-                    }
-                </View>
-
-                {/* Title */}
-                <Text
-                    style={[styles.cardTitle, { color: expanded ? config.accentColor : '#2D3748' }]}
-                    numberOfLines={expanded ? undefined : 2}
-                >
-                    {item.title}
-                </Text>
-
-                {/* Expanded body */}
-                {expanded && (
-                    <View style={styles.expandedBody}>
-                        <Text style={styles.cardBody}>{item.body}</Text>
-                        <View style={styles.cardFooter}>
-                            <View style={styles.footerItem}>
-                                <User size={11} color="#A0AEC0" strokeWidth={2} />
-                                <Text style={styles.footerText}>{item.postedBy}</Text>
-                            </View>
-                            <View style={styles.footerItem}>
-                                <Clock size={11} color="#A0AEC0" strokeWidth={2} />
-                                <Text style={styles.footerText}>{item.postedDate}</Text>
-                            </View>
-                        </View>
-                    </View>
-                )}
-
-                {/* Collapsed footer (always visible) */}
-                {!expanded && (
-                    <View style={styles.collapsedFooter}>
-                        <Text style={styles.footerText} numberOfLines={1}>
-                            {item.postedBy}
-                        </Text>
-                        <Text style={styles.footerText}>{item.postedDate}</Text>
-                    </View>
-                )}
-            </View>
-        </TouchableOpacity>
-    );
-};
-
-const AnnouncementsScreen: React.FC<Props> = ({ navigation, route }) => {
-    const { faculty } = route.params;
-    const [activeTab, setActiveTab] = useState<TabKey>('all');
-
-    const filtered = ANNOUNCEMENTS.filter((a) => {
-        if (activeTab === 'all') return true;
-        if (activeTab === 'important') return a.category === 'urgent';
-        if (activeTab === 'event') return a.category === 'event';
-        return true;
+    // Modal state for composing a notice
+    const [isModalVisible, setModalVisible] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [newNotice, setNewNotice] = useState({
+        title: '',
+        message: '',
+        category: 'Academic',
+        targetAudience: 'Students',
+        isUrgent: false
     });
 
-    const unreadCount = ANNOUNCEMENTS.filter((a) => !a.isRead).length;
-    const importantCount = ANNOUNCEMENTS.filter((a) => a.category === 'urgent').length;
-    const eventCount = ANNOUNCEMENTS.filter((a) => a.category === 'event').length;
+    useEffect(() => {
+        fetchAnnouncements();
+    }, []);
 
-    const tabCount: Record<TabKey, number> = {
-        all: ANNOUNCEMENTS.length,
-        important: importantCount,
-        event: eventCount,
+    const fetchAnnouncements = async () => {
+        try {
+            const response = await announcementsApi.getAll();
+            setAnnouncements(response.data);
+        } catch (error) {
+            console.error('Failed to fetch announcements:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSendNotice = async () => {
+        if (!newNotice.title.trim() || !newNotice.message.trim()) {
+            Alert.alert('Missing Fields', 'Please enter a title and message.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            await announcementsApi.create(newNotice);
+            Alert.alert('Success', 'Notice sent successfully!');
+            setModalVisible(false);
+            setNewNotice({ title: '', message: '', category: 'Academic', targetAudience: 'Students', isUrgent: false });
+
+            // Refresh list
+            setLoading(true);
+            fetchAnnouncements();
+        } catch (error) {
+            console.error('Error sending notice:', error);
+            Alert.alert('Error', 'Failed to send the notice.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="light-content" backgroundColor="#0F2754" />
+            <StatusBar barStyle="light-content" backgroundColor="#1A3A6B" />
 
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity
-                    style={styles.backBtn}
-                    onPress={() => navigation.goBack()}
-                    accessibilityRole="button"
-                    accessibilityLabel="Go back"
-                >
-                    <ArrowLeft size={22} color="#fff" strokeWidth={2} />
+                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                    <ArrowLeft size={20} color="#FFFFFF" />
                 </TouchableOpacity>
-                <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle}>Announcements</Text>
-                    <Text style={styles.headerSub}>
-                        {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
-                    </Text>
-                </View>
-                {/* Unread badge */}
-                <View style={styles.headerRight}>
-                    {unreadCount > 0 && (
-                        <View style={styles.unreadBadge}>
-                            <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
-                        </View>
-                    )}
-                </View>
+                <Text style={styles.headerTitle}>Announcements</Text>
+                <View style={{ width: 36 }} />
             </View>
 
-            {/* Summary strip */}
-            <View style={styles.summaryStrip}>
-                <View style={styles.summaryItem}>
-                    <Text style={styles.summaryNum}>{ANNOUNCEMENTS.length}</Text>
-                    <Text style={styles.summaryLbl}>Total</Text>
-                </View>
-                <View style={styles.summaryDiv} />
-                <View style={styles.summaryItem}>
-                    <Text style={[styles.summaryNum, { color: '#FC8181' }]}>{importantCount}</Text>
-                    <Text style={styles.summaryLbl}>Important</Text>
-                </View>
-                <View style={styles.summaryDiv} />
-                <View style={styles.summaryItem}>
-                    <Text style={[styles.summaryNum, { color: '#68D391' }]}>{eventCount}</Text>
-                    <Text style={styles.summaryLbl}>Events</Text>
-                </View>
-                <View style={styles.summaryDiv} />
-                <View style={styles.summaryItem}>
-                    <Text style={[styles.summaryNum, { color: '#F6E05E' }]}>
-                        {ANNOUNCEMENTS.filter((a: Announcement) => a.category === 'academic').length}
-                    </Text>
-                    <Text style={styles.summaryLbl}>Academic</Text>
-                </View>
-            </View>
-
-            {/* Tabs */}
-            <View style={styles.tabsRow}>
-                {TABS.map((tab) => {
-                    const isActive = activeTab === tab.key;
-                    const TabIcon = tab.icon;
-                    const activeColors: Record<TabKey, string> = {
-                        all: '#1A3A6B',
-                        important: '#E53E3E',
-                        event: '#276749',
-                    };
-                    const color = isActive ? activeColors[tab.key] : '#A0AEC0';
-                    return (
-                        <TouchableOpacity
-                            key={tab.key}
-                            style={[
-                                styles.tab,
-                                isActive && styles.tabActive,
-                                isActive && { borderBottomColor: activeColors[tab.key] },
-                            ]}
-                            onPress={() => setActiveTab(tab.key)}
-                            accessibilityRole="tab"
-                            accessibilityState={{ selected: isActive }}
-                        >
-                            <TabIcon size={15} color={color} strokeWidth={2} />
-                            <Text style={[styles.tabLabel, { color }]}>{tab.label}</Text>
-                            <View style={[
-                                styles.tabCountBadge,
-                                isActive && { backgroundColor: activeColors[tab.key] }
-                            ]}>
-                                <Text style={[
-                                    styles.tabCountText,
-                                    isActive && { color: '#fff' }
-                                ]}>
-                                    {tabCount[tab.key]}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
-
-            {/* List */}
-            <ScrollView
-                style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {filtered.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Bell size={40} color="#CBD5E0" strokeWidth={1.5} />
-                        <Text style={styles.emptyTitle}>No announcements</Text>
-                        <Text style={styles.emptyBody}>Nothing here in this category right now.</Text>
-                    </View>
+            <View style={styles.container}>
+                {loading ? (
+                    <ActivityIndicator size="large" color="#2B6CB0" style={{ marginTop: 40 }} />
                 ) : (
-                    filtered.map((item: Announcement) => (
-                        <AnnouncementCard key={item.id} item={item} />
-                    ))
+                    <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
+                        {announcements.length === 0 ? (
+                            <Text style={styles.emptyText}>No announcements found.</Text>
+                        ) : (
+                            announcements.map((item) => (
+                                <View key={item.id} style={[styles.card, item.isUrgent && styles.cardUrgent]}>
+                                    <View style={styles.cardHeader}>
+                                        <Text style={styles.cardCategory}>{item.category}</Text>
+                                        <Text style={styles.cardDate}>
+                                            {new Date(item.createdAt).toLocaleDateString()}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.cardTitle}>{item.title}</Text>
+                                    <Text style={styles.cardMessage}>{item.message}</Text>
+                                    <View style={styles.cardFooter}>
+                                        <Text style={styles.cardAudience}>To: {item.targetAudience}</Text>
+                                        {item.isUrgent && (
+                                            <View style={styles.urgentBadge}>
+                                                <AlertTriangle size={10} color="#E53E3E" />
+                                                <Text style={styles.urgentText}>URGENT</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+                            ))
+                        )}
+                    </ScrollView>
                 )}
-                <View style={{ height: 32 }} />
-            </ScrollView>
+            </View>
+
+            {/* Floating Action Button (FAB) */}
+            <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+                <Plus size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            {/* Compose Notice Modal */}
+            <Modal visible={isModalVisible} animationType="slide" transparent={true}>
+                <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>New Announcement</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <X size={24} color="#4A5568" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Text style={styles.label}>Title</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="E.g., Tomorrow's class shifted"
+                                value={newNotice.title}
+                                onChangeText={(t) => setNewNotice({ ...newNotice, title: t })}
+                            />
+
+                            <Text style={styles.label}>Message</Text>
+                            <TextInput
+                                style={[styles.input, styles.textArea]}
+                                placeholder="Type your notice here..."
+                                multiline
+                                textAlignVertical="top"
+                                value={newNotice.message}
+                                onChangeText={(t) => setNewNotice({ ...newNotice, message: t })}
+                            />
+
+                            <Text style={styles.label}>Audience</Text>
+                            <View style={styles.row}>
+                                {['Students', 'All'].map((aud) => (
+                                    <TouchableOpacity
+                                        key={aud}
+                                        style={[styles.chip, newNotice.targetAudience === aud && styles.chipActive]}
+                                        onPress={() => setNewNotice({ ...newNotice, targetAudience: aud })}
+                                    >
+                                        <Text style={[styles.chipText, newNotice.targetAudience === aud && styles.chipTextActive]}>{aud}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.submitBtn, isSubmitting && { opacity: 0.7 }]}
+                                onPress={handleSendNotice}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Post Announcement</Text>}
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </SafeAreaView>
     );
-};
+}
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#0F2754' },
+    safeArea: { flex: 1, backgroundColor: '#1A3A6B' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#1A3A6B' },
+    backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+    headerTitle: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+    container: { flex: 1, backgroundColor: '#F0F4F8', borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingTop: 20 },
+    listContainer: { paddingHorizontal: 16, paddingBottom: 80 },
+    emptyText: { textAlign: 'center', color: '#A0AEC0', marginTop: 40 },
+    card: { backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0', elevation: 1 },
+    cardUrgent: { borderColor: '#FEB2B2', backgroundColor: '#FFF5F5' },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    cardCategory: { fontSize: 11, fontWeight: '700', color: '#3182CE', backgroundColor: '#EBF8FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+    cardDate: { fontSize: 11, color: '#A0AEC0' },
+    cardTitle: { fontSize: 15, fontWeight: '800', color: '#1A3A6B', marginBottom: 6 },
+    cardMessage: { fontSize: 13, color: '#4A5568', lineHeight: 20, marginBottom: 12 },
+    cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingTop: 10 },
+    cardAudience: { fontSize: 11, fontWeight: '600', color: '#718096' },
+    urgentBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FED7D7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+    urgentText: { fontSize: 10, fontWeight: '800', color: '#E53E3E' },
 
-    // Header
-    header: {
-        flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 14, paddingTop: 10, paddingBottom: 12,
-        backgroundColor: '#0F2754',
-    },
-    backBtn: {
-        width: 38, height: 38, borderRadius: 19,
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        alignItems: 'center', justifyContent: 'center',
-    },
-    headerCenter: { flex: 1, alignItems: 'center' },
-    headerTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
-    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 1 },
-    headerRight: { width: 38, alignItems: 'flex-end' },
-    unreadBadge: {
-        backgroundColor: '#E53E3E', borderRadius: 10,
-        minWidth: 22, height: 22,
-        alignItems: 'center', justifyContent: 'center',
-        paddingHorizontal: 5,
-    },
-    unreadBadgeText: { fontSize: 11, fontWeight: '800', color: '#fff' },
+    // FAB Styles
+    fab: { position: 'absolute', bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: '#2B6CB0', alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
 
-    // Summary strip
-    summaryStrip: {
-        flexDirection: 'row', backgroundColor: '#0F2754',
-        paddingHorizontal: 16, paddingBottom: 14,
-        alignItems: 'center', justifyContent: 'space-around',
-    },
-    summaryItem: { alignItems: 'center', flex: 1 },
-    summaryNum: { fontSize: 20, fontWeight: '800', color: '#fff' },
-    summaryLbl: { fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '600', marginTop: 1 },
-    summaryDiv: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.15)' },
-
-    // Tabs
-    tabsRow: {
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#EDF2F7',
-    },
-    tab: {
-        flex: 1, flexDirection: 'row', alignItems: 'center',
-        justifyContent: 'center', gap: 5,
-        paddingVertical: 13,
-        borderBottomWidth: 2.5, borderBottomColor: 'transparent',
-    },
-    tabActive: {},
-    tabLabel: { fontSize: 12, fontWeight: '700' },
-    tabCountBadge: {
-        backgroundColor: '#EDF2F7', borderRadius: 10,
-        minWidth: 18, height: 18,
-        alignItems: 'center', justifyContent: 'center',
-        paddingHorizontal: 5,
-    },
-    tabCountText: { fontSize: 10, fontWeight: '800', color: '#718096' },
-
-    // Scroll
-    scroll: { flex: 1, backgroundColor: '#F0F4F8' },
-    scrollContent: { padding: 14, gap: 10 },
-
-    // Card
-    card: {
-        flexDirection: 'row',
-        borderRadius: 14,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 6,
-    },
-    accentBar: { width: 4, flexShrink: 0 },
-    cardInner: { flex: 1, padding: 14 },
-    cardTopRow: {
-        flexDirection: 'row', alignItems: 'center',
-        gap: 8, marginBottom: 8,
-    },
-    categoryIconCircle: {
-        width: 28, height: 28, borderRadius: 8,
-        alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
-    },
-    cardMeta: {
-        flex: 1, flexDirection: 'row',
-        alignItems: 'center', gap: 6,
-    },
-    categoryBadge: {
-        paddingHorizontal: 8, paddingVertical: 3,
-        borderRadius: 6,
-    },
-    categoryBadgeText: { fontSize: 10, fontWeight: '700' },
-    unreadDot: {
-        width: 7, height: 7, borderRadius: 3.5,
-        backgroundColor: '#1A3A6B',
-    },
-    cardTitle: {
-        fontSize: 13, fontWeight: '700',
-        lineHeight: 19, marginBottom: 6,
-    },
-
-    // Expanded
-    expandedBody: { marginTop: 4 },
-    cardBody: {
-        fontSize: 13, color: '#4A5568',
-        lineHeight: 20, marginBottom: 12,
-    },
-    cardFooter: {
-        flexDirection: 'row', gap: 14,
-        paddingTop: 10, borderTopWidth: 1,
-        borderTopColor: '#EDF2F7',
-    },
-    footerItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    footerText: { fontSize: 11, color: '#A0AEC0', fontWeight: '500' },
-
-    // Collapsed footer
-    collapsedFooter: {
-        flexDirection: 'row', justifyContent: 'space-between',
-        alignItems: 'center', marginTop: 2,
-    },
-
-    // Empty state
-    emptyState: {
-        alignItems: 'center', justifyContent: 'center',
-        paddingVertical: 60, gap: 10,
-    },
-    emptyTitle: { fontSize: 16, fontWeight: '700', color: '#A0AEC0' },
-    emptyBody: { fontSize: 13, color: '#CBD5E0', textAlign: 'center' },
+    // Modal Styles
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '85%' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A3A6B' },
+    label: { fontSize: 12, fontWeight: 'bold', color: '#4A5568', marginBottom: 6, marginTop: 12 },
+    input: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, padding: 12, fontSize: 14, color: '#2D3748' },
+    textArea: { height: 100 },
+    row: { flexDirection: 'row', gap: 10 },
+    chip: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' },
+    chipActive: { backgroundColor: '#3182CE', borderColor: '#3182CE' },
+    chipText: { fontSize: 12, fontWeight: '600', color: '#4A5568' },
+    chipTextActive: { color: '#FFF' },
+    submitBtn: { backgroundColor: '#2B6CB0', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 24, marginBottom: 20 },
+    submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' }
 });
-
-export default AnnouncementsScreen;

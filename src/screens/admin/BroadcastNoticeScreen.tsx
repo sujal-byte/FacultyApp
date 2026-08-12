@@ -1,3 +1,6 @@
+import { ActivityIndicator } from 'react-native';
+import { announcementsApi } from '../../services/api';
+import * as SecureStore from 'expo-secure-store';
 import React, { useState } from 'react';
 import {
     View,
@@ -18,6 +21,7 @@ export default function BroadcastNoticeScreen({ navigation }: any) {
     const [category, setCategory] = useState('Academic');
     const [targetAudience, setTargetAudience] = useState('All');
     const [isUrgent, setIsUrgent] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const categories = [
         { label: 'Academic', icon: BookOpen },
@@ -27,18 +31,44 @@ export default function BroadcastNoticeScreen({ navigation }: any) {
 
     const audiences = ['All', 'Faculty', 'Students'];
 
-    const handleBroadcast = () => {
+    const handleBroadcast = async () => {
         if (!title.trim() || !message.trim()) {
             Alert.alert('Missing Fields', 'Please fill in both the title and message before broadcasting.');
             return;
         }
 
-        // Backend integration will go here
-        Alert.alert(
-            'Notice Broadcasted',
-            `Your notice "${title}" has been sent to ${targetAudience}.`,
-            [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
+        setIsSubmitting(true);
+        try {
+            await announcementsApi.create({
+                title,
+                message,
+                category,
+                targetAudience,
+                isUrgent
+            });
+
+            Alert.alert(
+                'Notice Broadcasted',
+                `Your notice "${title}" has been sent successfully.`,
+                [{ text: 'OK', onPress: () => navigation.goBack() }]
+            );
+        } catch (error: any) {
+            console.error('Error broadcasting notice:', error);
+            const status = error.response?.status;
+            if (status === 401) {
+                // Stale or invalid token — clear it and force re-login
+                await SecureStore.deleteItemAsync('userToken');
+                Alert.alert(
+                    'Session Expired',
+                    'Your session has expired or is invalid. Please log in again.',
+                    [{ text: 'OK', onPress: () => navigation.replace('Login') }]
+                );
+            } else {
+                Alert.alert('Error', error.response?.data?.message || 'Failed to send the notice.');
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -145,9 +175,19 @@ export default function BroadcastNoticeScreen({ navigation }: any) {
 
             {/* Bottom Action Bar */}
             <View style={styles.bottomBar}>
-                <TouchableOpacity style={styles.broadcastBtn} onPress={handleBroadcast}>
-                    <Send size={18} color="#FFFFFF" />
-                    <Text style={styles.broadcastBtnText}>Broadcast Notice</Text>
+                <TouchableOpacity
+                    style={[styles.broadcastBtn, isSubmitting && { opacity: 0.7 }]}
+                    onPress={handleBroadcast}
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? (
+                        <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                        <>
+                            <Send size={18} color="#FFFFFF" />
+                            <Text style={styles.broadcastBtnText}>Broadcast Notice</Text>
+                        </>
+                    )}
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

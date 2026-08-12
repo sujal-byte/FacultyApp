@@ -35,6 +35,21 @@ api.interceptors.request.use(
   }
 );
 
+// Response interceptor: clear stale token on 401 so the next call to SecureStore
+// won't attach an invalid token. The individual screen can then redirect to Login.
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      try {
+        await SecureStore.deleteItemAsync('userToken');
+      } catch (_) {}
+    }
+    return Promise.reject(error);
+  }
+);
+
+
 export interface User {
   id: string;
   name: string;
@@ -59,3 +74,9 @@ export const adminApi = {
   deleteUser: (id: string) => api.delete(`/users/${id}`),
 };
 
+// Add this near your existing adminApi export in src/services/api.ts
+export const announcementsApi = {
+  getAll: () => api.get('/announcements'),
+  create: (data: { title: string; message: string; category: string; targetAudience: string; isUrgent: boolean }) =>
+    api.post('/announcements', data),
+};

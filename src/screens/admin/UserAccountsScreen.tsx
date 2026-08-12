@@ -26,6 +26,7 @@ export default function UserAccountsScreen({ navigation }: any) {
     // Modal State
     const [isModalVisible, setModalVisible] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [editingUserId, setEditingUserId] = useState<string | null>(null);
     const [newUser, setNewUser] = useState({
         name: '',
         email: '',
@@ -34,6 +35,25 @@ export default function UserAccountsScreen({ navigation }: any) {
         usn: '',
         department: ''
     });
+
+    const openCreateModal = () => {
+        setEditingUserId(null);
+        setNewUser({ name: '', email: '', dob: '', role: 'FACULTY', usn: '', department: '' });
+        setModalVisible(true);
+    };
+
+    const openEditModal = (user: any) => {
+        setEditingUserId(user.id);
+        setNewUser({
+            name: user.name || '',
+            email: user.email || '',
+            dob: user.dob || '',
+            role: user.role || 'FACULTY',
+            usn: user.usn || '',
+            department: user.department || '',
+        });
+        setModalVisible(true);
+    };
 
     useEffect(() => {
         fetchUsers();
@@ -51,7 +71,7 @@ export default function UserAccountsScreen({ navigation }: any) {
         }
     };
 
-    const handleCreateUser = async () => {
+    const handleSaveUser = async () => {
         if (!newUser.name || !newUser.email || !newUser.dob) {
             Alert.alert('Missing Fields', 'Name, Email, and Date of Birth (DOB) are required.');
             return;
@@ -59,20 +79,48 @@ export default function UserAccountsScreen({ navigation }: any) {
 
         setIsSubmitting(true);
         try {
-            await adminApi.createUser(newUser);
-            Alert.alert('Success', 'User created successfully!');
+            if (editingUserId) {
+                await adminApi.updateUser(editingUserId, newUser);
+                Alert.alert('Success', 'User updated successfully!');
+            } else {
+                await adminApi.createUser(newUser);
+                Alert.alert('Success', 'User created successfully!');
+            }
             setModalVisible(false);
+            setEditingUserId(null);
             setNewUser({ name: '', email: '', dob: '', role: 'FACULTY', usn: '', department: '' });
-
-            // Refresh the list to show the newly added user
             setLoading(true);
             fetchUsers();
         } catch (error: any) {
-            console.error('Error creating user:', error);
-            Alert.alert('Error', error.response?.data?.message || 'Failed to create user.');
+            console.error('Error saving user:', error);
+            Alert.alert('Error', error.response?.data?.message || 'Failed to save user.');
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleDeleteUser = (user: any) => {
+        Alert.alert(
+            'Delete User',
+            `Are you sure you want to delete "${user.name}"? This action cannot be undone.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await adminApi.deleteUser(user.id);
+                            setUsersList((prev) => prev.filter((u) => u.id !== user.id));
+                            Alert.alert('Deleted', `${user.name} has been removed.`);
+                        } catch (error: any) {
+                            console.error('Error deleting user:', error);
+                            Alert.alert('Error', error.response?.data?.message || 'Failed to delete user.');
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const filteredUsers = usersList.filter((u) => {
@@ -100,7 +148,7 @@ export default function UserAccountsScreen({ navigation }: any) {
                     <ArrowLeft size={20} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>User Accounts</Text>
-                <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
+                <TouchableOpacity style={styles.addBtn} onPress={openCreateModal}>
                     <UserPlus size={18} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
@@ -160,10 +208,10 @@ export default function UserAccountsScreen({ navigation }: any) {
                                         <Text style={styles.badgeText}>{item.role}</Text>
                                     </View>
                                     <View style={styles.actionIcons}>
-                                        <TouchableOpacity onPress={() => alert(`Edit ${item.name}`)}>
+                                        <TouchableOpacity onPress={() => openEditModal(item)}>
                                             <Edit3 size={16} color="#4A5568" />
                                         </TouchableOpacity>
-                                        <TouchableOpacity onPress={() => alert(`Delete ${item.name}`)}>
+                                        <TouchableOpacity onPress={() => handleDeleteUser(item)}>
                                             <Trash2 size={16} color="#E53E3E" />
                                         </TouchableOpacity>
                                     </View>
@@ -182,7 +230,7 @@ export default function UserAccountsScreen({ navigation }: any) {
                 >
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Create New User</Text>
+                            <Text style={styles.modalTitle}>{editingUserId ? 'Edit User' : 'Create New User'}</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
                                 <X size={24} color="#4A5568" />
                             </TouchableOpacity>
@@ -219,10 +267,10 @@ export default function UserAccountsScreen({ navigation }: any) {
 
                             <TouchableOpacity
                                 style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
-                                onPress={handleCreateUser}
+                                onPress={handleSaveUser}
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Create Account</Text>}
+                                {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>{editingUserId ? 'Save Changes' : 'Create Account'}</Text>}
                             </TouchableOpacity>
                         </ScrollView>
                     </View>
