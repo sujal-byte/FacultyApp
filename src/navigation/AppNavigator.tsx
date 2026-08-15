@@ -5,7 +5,7 @@ import { RootStackParamList } from '../types';
 import LoginScreen from '../screens/auth/LoginScreen';
 import FacultyDashboardScreen from '../screens/faculty/FacultyDashboardScreen';
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
-import UserAccountsScreen from '../screens/admin/UserAccountsScreen'; // Added import
+import UserAccountsScreen from '../screens/admin/UserAccountsScreen';
 import BroadcastNoticeScreen from '../screens/admin/BroadcastNoticeScreen';
 import AuditLogsScreen from '../screens/admin/AuditLogsScreen';
 import ReportsScreen from '../screens/admin/ReportsScreen';
@@ -18,7 +18,7 @@ import SubmissionsScreen from '../screens/faculty/SubmissionsScreen';
 import ProfileScreen from '../screens/faculty/ProfileScreen';
 import AdminFeedbackScreen from '../screens/admin/AdminFeedbackScreen';
 import AdminQuizScreen from '../screens/admin/AdminQuizScreen';
-
+import AdminSubmissionsScreen from '../screens/admin/AdminSubmissionsScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -38,6 +38,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Reports" component={ReportsScreen} />
             <Stack.Screen name="AdminFeedback" component={AdminFeedbackScreen} />
             <Stack.Screen name="AdminQuiz" component={AdminQuizScreen} />
+            <Stack.Screen name="AdminSubmissions" component={AdminSubmissionsScreen} />
             <Stack.Screen name="UserAccounts" component={UserAccountsScreen} />
             <Stack.Screen name="Feedback" component={FeedbackScreen} />
             <Stack.Screen name="Timetable" component={TimetableScreen} />

@@ -19,7 +19,7 @@ import {
     LogOut,
     LayoutGrid,
     MessageSquare,
-    ClipboardList,
+    FileCheck,
 } from 'lucide-react-native';
 
 export default function AdminDashboardScreen({ navigation }: any) {
@@ -177,13 +177,13 @@ export default function AdminDashboardScreen({ navigation }: any) {
 
                     <TouchableOpacity
                         style={styles.actionCard}
-                        onPress={() => navigation.navigate('AdminQuiz')}
+                        onPress={() => navigation.navigate('AdminSubmissions')}
                     >
                         <View style={[styles.iconWrap, { backgroundColor: '#EBF8FF' }]}>
-                            <ClipboardList size={20} color="#2B6CB0" />
+                            <FileCheck size={20} color="#2B6CB0" />
                         </View>
-                        <Text style={styles.actionTitle}>Manage Quizzes</Text>
-                        <Text style={styles.actionDesc}>Create & monitor college-wide exams</Text>
+                        <Text style={styles.actionTitle}>Upcoming Submissions</Text>
+                        <Text style={styles.actionDesc}>Track assignments and submissions</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

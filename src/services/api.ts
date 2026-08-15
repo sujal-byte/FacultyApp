@@ -49,7 +49,6 @@ api.interceptors.response.use(
   }
 );
 
-
 export interface User {
   id: string;
   name: string;
@@ -57,6 +56,39 @@ export interface User {
   role: 'ADMIN' | 'FACULTY' | 'STUDENT';
   usn: string | null;
   department?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AuditLogItem {
+  id: string;
+  action: string;
+  details: string;
+  adminId: string;
+  createdAt: string;
+  admin?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+export interface SubmissionItem {
+  id: string;
+  title: string;
+  description?: string | null;
+  dueDate: string;
+  status: 'PENDING' | 'SUBMITTED' | 'OVERDUE';
+  facultyId: string;
+  faculty?: {
+    id: string;
+    name: string;
+    email: string;
+    department?: string | null;
+    usn?: string | null;
+    role?: string;
+  };
   createdAt?: string;
   updatedAt?: string;
 }
@@ -72,6 +104,29 @@ export const adminApi = {
   updateUser: (id: string, userData: any) => api.put(`/users/${id}`, userData),
 
   deleteUser: (id: string) => api.delete(`/users/${id}`),
+
+  getAuditLogs: () => api.get('/audit-logs'),
+
+  getSubmissions: () => api.get<SubmissionItem[]>('/submissions'),
+
+  createSubmission: (data: {
+    title: string;
+    description?: string;
+    dueDate: string;
+    facultyId: string;
+    status?: 'PENDING' | 'SUBMITTED' | 'OVERDUE';
+  }) => api.post<SubmissionItem>('/submissions', data),
+};
+
+export const submissionsApi = {
+  getAll: () => api.get<SubmissionItem[]>('/submissions'),
+  create: (data: {
+    title: string;
+    description?: string;
+    dueDate: string;
+    facultyId: string;
+    status?: 'PENDING' | 'SUBMITTED' | 'OVERDUE';
+  }) => api.post<SubmissionItem>('/submissions', data),
 };
 
 // Add this near your existing adminApi export in src/services/api.ts

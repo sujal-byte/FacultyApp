@@ -18,7 +18,7 @@ import {
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList, LeaveApplication } from '../../types';
-import { LEAVE_APPLICATIONS, TOTAL_LEAVE_QUOTA } from '../../data/mockData';
+const TOTAL_LEAVE_QUOTA = 15;
 import {
     ArrowLeft,
     Calendar,
@@ -284,8 +284,8 @@ const ApplyLeaveModal: React.FC<{
 
 // ── Main Screen ───────────────────────────────────────────────
 const LeaveApplicationScreen: React.FC<Props> = ({ navigation, route }) => {
-    const { faculty } = route.params;
-    const [leaves, setLeaves] = useState<LeaveApplication[]>(LEAVE_APPLICATIONS);
+    const { faculty } = route.params || {};
+    const [leaves, setLeaves] = useState<LeaveApplication[]>([]);
     const [modalVisible, setModalVisible] = useState(false);
 
     const taken = leaves.filter(l => l.status === 'approved').reduce((s, l) => s + l.days, 0);
@@ -332,7 +332,7 @@ const LeaveApplicationScreen: React.FC<Props> = ({ navigation, route }) => {
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
                     <Text style={styles.headerTitle}>Leave Application</Text>
-                    <Text style={styles.headerSub}>{faculty.name}</Text>
+                    <Text style={styles.headerSub}>{faculty?.name || 'Faculty'}</Text>
                 </View>
                 <View style={styles.headerRight}>
                     <View style={styles.quotaBadge}>

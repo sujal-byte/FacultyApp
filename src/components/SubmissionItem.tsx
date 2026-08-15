@@ -16,9 +16,12 @@ const TYPE_CONFIG = {
 };
 
 const SubmissionItem: React.FC<SubmissionItemProps> = ({ submission }) => {
-    const config = TYPE_CONFIG[submission.type];
+    const typeKey = (submission.type || 'assignment') as keyof typeof TYPE_CONFIG;
+    const config = TYPE_CONFIG[typeKey] || TYPE_CONFIG.assignment;
     const TypeIcon = config.icon;
-    const progress = Math.round((submission.submittedCount / submission.totalStudents) * 100);
+    const total = submission.totalStudents ?? 60;
+    const submitted = submission.submittedCount ?? 0;
+    const progress = total > 0 ? Math.round((submitted / total) * 100) : 0;
 
     return (
         <View style={styles.container}>

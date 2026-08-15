@@ -16,8 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
-import { ANNOUNCEMENTS } from '../../data/mockData';
-import { api } from '../../services/api';
+import { api, announcementsApi } from '../../services/api';
 import DashboardCard from '../../components/DashboardCard';
 import SubmissionItem from '../../components/SubmissionItem';
 import CalendarModal from '../../components/CalendarModal';
@@ -41,11 +40,12 @@ export default function FacultyDashboardScreen({ navigation }: any) {
     const [faculty, setFaculty] = useState<any>(null);
     const [courses, setCourses] = useState<any[]>([]);
     const [submissions, setSubmissions] = useState<any[]>([]);
+    const [announcements, setAnnouncements] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showCalModal, setShowCalModal] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
-    const unreadCount = ANNOUNCEMENTS.filter((a) => !a.isRead).length;
+    const unreadCount = announcements.length;
 
     const handleLogout = async () => {
         await SecureStore.deleteItemAsync('userToken');
@@ -62,15 +62,17 @@ export default function FacultyDashboardScreen({ navigation }: any) {
                 setLoading(true);
             }
             setError(null);
-            const [profileRes, coursesRes, submissionsRes] = await Promise.all([
+            const [profileRes, coursesRes, submissionsRes, announcementsRes] = await Promise.all([
                 api.get('/faculty/profile'),
                 api.get('/faculty/courses'),
                 api.get('/faculty/submissions'),
+                announcementsApi.getAll().catch(() => ({ data: [] })),
             ]);
 
             setFaculty(profileRes.data);
             setCourses(coursesRes.data);
             setSubmissions(submissionsRes.data);
+            setAnnouncements(Array.isArray(announcementsRes.data) ? announcementsRes.data : []);
         } catch (err: any) {
             console.error('Error fetching dashboard data:', err);
             if (err.response?.status === 401) {
@@ -340,15 +342,21 @@ export default function FacultyDashboardScreen({ navigation }: any) {
                     </View>
 
                     <View style={styles.submissionsList}>
-                        {submissions.map((sub) => (
-                            <TouchableOpacity
-                                key={sub.id}
-                                onPress={() => navigation.navigate('Submissions', { faculty })}
-                                activeOpacity={0.85}
-                            >
-                                <SubmissionItem submission={sub} />
-                            </TouchableOpacity>
-                        ))}
+                        {submissions.length === 0 ? (
+                            <View style={{ paddingVertical: 14, alignItems: 'center' }}>
+                                <Text style={{ fontSize: 13, color: '#718096' }}>No upcoming submissions pending.</Text>
+                            </View>
+                        ) : (
+                            submissions.map((sub) => (
+                                <TouchableOpacity
+                                    key={sub.id}
+                                    onPress={() => navigation.navigate('Submissions', { faculty })}
+                                    activeOpacity={0.85}
+                                >
+                                    <SubmissionItem submission={sub} />
+                                </TouchableOpacity>
+                            ))
+                        )}
                     </View>
                 </View>
 
@@ -359,32 +367,46 @@ export default function FacultyDashboardScreen({ navigation }: any) {
                         <Text style={styles.sectionTitle}>Recent Announcements</Text>
                     </View>
 
-                    {ANNOUNCEMENTS.slice(0, 2).map((ann) => (
-                        <View key={ann.id} style={styles.annItem}>
-                            <View
-                                style={[
-                                    styles.annCategoryDot,
-                                    {
-                                        backgroundColor:
-                                            ann.category === 'urgent'
-                                                ? '#E53E3E'
-                                                : ann.category === 'event'
-                                                    ? '#6B46C1'
-                                                    : '#2B6CB0',
-                                    },
-                                ]}
-                            />
-                            <View style={styles.annContent}>
-                                <Text style={styles.annTitle} numberOfLines={2}>
-                                    {ann.title}
-                                </Text>
-                                <Text style={styles.annMeta}>
-                                    {ann.postedBy} · {ann.postedDate}
-                                </Text>
-                            </View>
-                            {!ann.isRead && <View style={styles.unreadDot} />}
+                    {announcements.length === 0 ? (
+                        <View style={{ paddingVertical: 12 }}>
+                            <Text style={{ fontSize: 12, color: '#718096', fontStyle: 'italic' }}>
+                                No recent announcements.
+                            </Text>
                         </View>
-                    ))}
+                    ) : (
+                        announcements.slice(0, 2).map((ann: any) => (
+                            <View key={ann.id} style={styles.annItem}>
+                                <View
+                                    style={[
+                                        styles.annCategoryDot,
+                                        {
+                                            backgroundColor:
+                                                ann.isUrgent || ann.category === 'urgent'
+                                                    ? '#E53E3E'
+                                                    : ann.category === 'event'
+                                                        ? '#6B46C1'
+                                                        : '#2B6CB0',
+                                        },
+                                    ]}
+                                />
+                                <View style={styles.annContent}>
+                                    <Text style={styles.annTitle} numberOfLines={2}>
+                                        {ann.title}
+                                    </Text>
+                                    <Text style={styles.annMeta}>
+                                        {ann.author?.name || ann.postedBy || 'Admin'} ·{' '}
+                                        {ann.createdAt
+                                            ? new Date(ann.createdAt).toLocaleDateString(undefined, {
+                                                  day: 'numeric',
+                                                  month: 'short',
+                                              })
+                                            : ann.postedDate || 'Recent'}
+                                    </Text>
+                                </View>
+                                {ann.isUrgent && <View style={styles.unreadDot} />}
+                            </View>
+                        ))
+                    )}
                 </View>
 
                 <View style={{ height: 80 }} />

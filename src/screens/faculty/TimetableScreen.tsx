@@ -13,7 +13,61 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList, TimetableSlot } from '../../types';
-import { TIMETABLE } from '../../data/mockData';
+const TIMETABLE: TimetableSlot[] = [
+    // MONDAY
+    { id: 'tt-mon-1', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Mon', startTime: '09:20', endTime: '10:15', room: 'Lab 204', section: 'Sec A', type: 'lecture' },
+    { id: 'tt-mon-2', courseCode: 'CS302', courseName: 'Database Systems', day: 'Mon', startTime: '10:15', endTime: '11:10', room: 'Room 301', section: 'Sec C', type: 'lecture' },
+    { id: 'tt-mon-3', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Mon', startTime: '11:30', endTime: '12:25', room: 'Lab 205', section: 'Sec A', type: 'lab' },
+    { id: 'tt-mon-4', courseCode: 'CS302', courseName: 'Database Systems', day: 'Mon', startTime: '12:25', endTime: '13:20', room: 'Room 301', section: 'Sec C', type: 'lecture' },
+    { id: 'tt-mon-5', courseCode: 'FREE', courseName: 'Free Period', day: 'Mon', startTime: '14:05', endTime: '15:00', room: '—', section: '—', type: 'free' },
+    { id: 'tt-mon-6', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Mon', startTime: '15:00', endTime: '15:55', room: 'Lab 204', section: 'Sec B', type: 'lab' },
+    { id: 'tt-mon-7', courseCode: 'FREE', courseName: 'Free Period', day: 'Mon', startTime: '15:55', endTime: '16:50', room: '—', section: '—', type: 'free' },
+
+    // TUESDAY
+    { id: 'tt-tue-1', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Tue', startTime: '09:20', endTime: '10:15', room: 'Lab 205', section: 'Sec A', type: 'lecture' },
+    { id: 'tt-tue-2', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Tue', startTime: '10:15', endTime: '11:10', room: 'Room 402', section: 'Sec A', type: 'lecture' },
+    { id: 'tt-tue-3', courseCode: 'FREE', courseName: 'Free Period', day: 'Tue', startTime: '11:30', endTime: '12:25', room: '—', section: '—', type: 'free' },
+    { id: 'tt-tue-4', courseCode: 'CS302', courseName: 'Database Systems', day: 'Tue', startTime: '12:25', endTime: '13:20', room: 'Room 301', section: 'Sec C', type: 'lecture' },
+    { id: 'tt-tue-5', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Tue', startTime: '14:05', endTime: '15:00', room: 'Lab 204', section: 'Sec B', type: 'lecture' },
+    { id: 'tt-tue-6', courseCode: 'FREE', courseName: 'Free Period', day: 'Tue', startTime: '15:00', endTime: '15:55', room: '—', section: '—', type: 'free' },
+    { id: 'tt-tue-7', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Tue', startTime: '15:55', endTime: '16:50', room: 'Lab 205', section: 'Sec A', type: 'lab' },
+
+    // WEDNESDAY
+    { id: 'tt-wed-1', courseCode: 'CS302', courseName: 'Database Systems', day: 'Wed', startTime: '09:20', endTime: '10:15', room: 'Room 301', section: 'Sec C', type: 'lecture' },
+    { id: 'tt-wed-2', courseCode: 'FREE', courseName: 'Free Period', day: 'Wed', startTime: '10:15', endTime: '11:10', room: '—', section: '—', type: 'free' },
+    { id: 'tt-wed-3', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Wed', startTime: '11:30', endTime: '12:25', room: 'Lab 204', section: 'Sec A', type: 'lab' },
+    { id: 'tt-wed-4', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Wed', startTime: '12:25', endTime: '13:20', room: 'Lab 204', section: 'Sec A', type: 'lab' },
+    { id: 'tt-wed-5', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Wed', startTime: '14:05', endTime: '15:00', room: 'Room 102', section: 'Sec A', type: 'lecture' },
+    { id: 'tt-wed-6', courseCode: 'CS302', courseName: 'Database Systems', day: 'Wed', startTime: '15:00', endTime: '15:55', room: 'Room 301', section: 'Sec C', type: 'lecture' },
+    { id: 'tt-wed-7', courseCode: 'FREE', courseName: 'Free Period', day: 'Wed', startTime: '15:55', endTime: '16:50', room: '—', section: '—', type: 'free' },
+
+    // THURSDAY
+    { id: 'tt-thu-1', courseCode: 'FREE', courseName: 'Free Period', day: 'Thu', startTime: '09:20', endTime: '10:15', room: '—', section: '—', type: 'free' },
+    { id: 'tt-thu-2', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Thu', startTime: '10:15', endTime: '11:10', room: 'Lab 205', section: 'Sec A', type: 'lab' },
+    { id: 'tt-thu-3', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Thu', startTime: '11:30', endTime: '12:25', room: 'Lab 205', section: 'Sec A', type: 'lab' },
+    { id: 'tt-thu-4', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Thu', startTime: '12:25', endTime: '13:20', room: 'Room 402', section: 'Sec B', type: 'lecture' },
+    { id: 'tt-thu-5', courseCode: 'CS302', courseName: 'Database Systems', day: 'Thu', startTime: '14:05', endTime: '15:00', room: 'Room 301', section: 'Sec C', type: 'lecture' },
+    { id: 'tt-thu-6', courseCode: 'FREE', courseName: 'Free Period', day: 'Thu', startTime: '15:00', endTime: '15:55', room: '—', section: '—', type: 'free' },
+    { id: 'tt-thu-7', courseCode: 'FREE', courseName: 'Free Period', day: 'Thu', startTime: '15:55', endTime: '16:50', room: '—', section: '—', type: 'free' },
+
+    // FRIDAY
+    { id: 'tt-fri-1', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Fri', startTime: '09:20', endTime: '10:15', room: 'Room 402', section: 'Sec A', type: 'lecture' },
+    { id: 'tt-fri-2', courseCode: 'CS302', courseName: 'Database Systems', day: 'Fri', startTime: '10:15', endTime: '11:10', room: 'Lab 203', section: 'Sec C', type: 'lab' },
+    { id: 'tt-fri-3', courseCode: 'CS302', courseName: 'Database Systems', day: 'Fri', startTime: '11:30', endTime: '12:25', room: 'Lab 203', section: 'Sec C', type: 'lab' },
+    { id: 'tt-fri-4', courseCode: 'FREE', courseName: 'Free Period', day: 'Fri', startTime: '12:25', endTime: '13:20', room: '—', section: '—', type: 'free' },
+    { id: 'tt-fri-5', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Fri', startTime: '14:05', endTime: '15:00', room: 'Room 102', section: 'Sec A', type: 'lecture' },
+    { id: 'tt-fri-6', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Fri', startTime: '15:00', endTime: '15:55', room: 'Lab 204', section: 'Sec B', type: 'lecture' },
+    { id: 'tt-fri-7', courseCode: 'FREE', courseName: 'Department Meeting', day: 'Fri', startTime: '15:55', endTime: '16:50', room: 'Conf Hall', section: 'All', type: 'free' },
+
+    // SATURDAY
+    { id: 'tt-sat-1', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Sat', startTime: '09:20', endTime: '10:15', room: 'Lab 205', section: 'Sec A', type: 'lecture' },
+    { id: 'tt-sat-2', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Sat', startTime: '10:15', endTime: '11:10', room: 'Room 402', section: 'Sec B', type: 'lecture' },
+    { id: 'tt-sat-3', courseCode: 'FREE', courseName: 'Project Mentoring', day: 'Sat', startTime: '11:30', endTime: '12:25', room: 'Lab 204', section: 'Final Yr', type: 'lab' },
+    { id: 'tt-sat-4', courseCode: 'FREE', courseName: 'Free Period', day: 'Sat', startTime: '12:25', endTime: '13:20', room: '—', section: '—', type: 'free' },
+    { id: 'tt-sat-5', courseCode: 'FREE', courseName: 'Free Period', day: 'Sat', startTime: '14:05', endTime: '15:00', room: '—', section: '—', type: 'free' },
+    { id: 'tt-sat-6', courseCode: 'FREE', courseName: 'Free Period', day: 'Sat', startTime: '15:00', endTime: '15:55', room: '—', section: '—', type: 'free' },
+    { id: 'tt-sat-7', courseCode: 'FREE', courseName: 'Free Period', day: 'Sat', startTime: '15:55', endTime: '16:50', room: '—', section: '—', type: 'free' },
+];
 import { ArrowLeft, Clock, MapPin, Users, BookOpen } from 'lucide-react-native';
 
 type TimetableNav = StackNavigationProp<RootStackParamList, 'Timetable'>;
@@ -88,7 +142,7 @@ const TimetableScreen: React.FC<Props> = ({ navigation, route }) => {
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
                     <Text style={styles.headerTitle}>Weekly Timetable</Text>
-                    <Text style={styles.headerSub}>{faculty.name}</Text>
+                    <Text style={styles.headerSub}>{faculty?.name || 'Faculty'}</Text>
                 </View>
                 <View style={styles.headerRight}>
                     <View style={styles.classBadge}>

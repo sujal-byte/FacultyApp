@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
-import { DEMO_FACULTY } from '../../data/mockData';
+import * as SecureStore from 'expo-secure-store';
 import {
     ArrowLeft,
     User,
@@ -44,7 +44,7 @@ interface Props {
 }
 
 const ProfileScreen: React.FC<Props> = ({ navigation, route }) => {
-    const { faculty } = route.params;
+    const faculty: any = route.params?.faculty || {};
 
     // Local form states
     const [isEditing, setIsEditing] = useState(false);
@@ -126,14 +126,14 @@ const ProfileScreen: React.FC<Props> = ({ navigation, route }) => {
         // Assign back to referenced object
         Object.assign(faculty, updatedFaculty);
         
-        // Also update the global DEMO_FACULTY to stay fully in sync
-        Object.assign(DEMO_FACULTY, updatedFaculty);
+        // Persist to SecureStore
+        SecureStore.setItemAsync('userData', JSON.stringify(updatedFaculty)).catch(() => {});
 
         setIsEditing(false);
         Alert.alert('Success', 'Profile details updated successfully!');
 
         // Pass updated faculty back to Dashboard so it immediately re-renders
-        navigation.navigate('Dashboard', { faculty: updatedFaculty });
+        navigation.navigate('FacultyDashboard', { faculty: updatedFaculty });
     };
 
     const getInitials = (name: string) => {

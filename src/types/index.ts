@@ -19,15 +19,21 @@ export interface Faculty {
 
 export interface Submission {
     id: string;
-    courseCode: string;
-    courseName: string;
+    courseCode?: string;
+    courseName?: string;
     title: string;
+    description?: string | null;
     dueDate: string;
-    dueDateDisplay: string;
-    totalStudents: number;
-    submittedCount: number;
-    type: 'assignment' | 'project' | 'quiz' | 'lab';
-    urgent: boolean;
+    dueDateDisplay?: string;
+    totalStudents?: number;
+    submittedCount?: number;
+    type?: 'assignment' | 'project' | 'quiz' | 'lab';
+    urgent?: boolean;
+    status?: string;
+    facultyId?: string;
+    faculty?: any;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface Announcement {
@@ -86,7 +92,8 @@ export interface FeedbackPayload {
 
 export type RootStackParamList = {
     Login: undefined;
-    Dashboard: { faculty: Faculty };
+    Dashboard: { faculty?: Faculty };
+    FacultyDashboard: { faculty?: Faculty } | undefined;
     AdminDashboard: undefined;
     UserAccounts: undefined;
     BroadcastNotice: undefined;
@@ -94,11 +101,12 @@ export type RootStackParamList = {
     Reports: undefined;
     AdminFeedback: undefined;
     AdminQuiz: undefined;
+    AdminSubmissions: undefined;
     Feedback: { facultyId: string };
-    Timetable: { faculty: Faculty };
-    Announcements: { faculty: Faculty };
-    LeaveApplication: { faculty: Faculty };
-    Courses: { faculty: Faculty };
-    Submissions: { faculty: Faculty };
-    Profile: { faculty: Faculty };
+    Timetable: { faculty?: Faculty };
+    Announcements: { faculty?: Faculty };
+    LeaveApplication: { faculty?: Faculty };
+    Courses: { faculty?: Faculty };
+    Submissions: { faculty?: Faculty } | undefined;
+    Profile: { faculty?: Faculty };
 };

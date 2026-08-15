@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -7,6 +7,8 @@ import {
     TouchableOpacity,
     TextInput,
     StatusBar,
+    ActivityIndicator,
+    RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -16,43 +18,144 @@ import {
     CheckCircle2,
     AlertTriangle,
     Info,
-    Clock
+    Clock,
+    RefreshCw,
 } from 'lucide-react-native';
+import { adminApi, AuditLogItem } from '../../services/api';
 
 export default function AuditLogsScreen({ navigation }: any) {
+    const [logs, setLogs] = useState<AuditLogItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [filter, setFilter] = useState('ALL');
 
-    // Mock data for system audit logs
-    const logsData = [
-        { id: '1', action: 'Failed Login Attempt', user: 'Unknown IP', time: '10 mins ago', type: 'DANGER', detail: 'Multiple failed attempts from 192.168.1.45' },
-        { id: '2', action: 'User Account Created', user: 'Admin User', time: '1 hour ago', type: 'SUCCESS', detail: 'New faculty account created for Dr. Sharma' },
-        { id: '3', action: 'Notice Broadcasted', user: 'Admin User', time: '3 hours ago', type: 'INFO', detail: 'Sent "Exam Schedule" to Students' },
-        { id: '4', action: 'System Update', user: 'System', time: 'Yesterday', type: 'WARNING', detail: 'Database backup completed with minor delays' },
-        { id: '5', action: 'Attendance Modified', user: 'Prof. Anand Kumar', time: 'Yesterday', type: 'INFO', detail: 'Updated record for CS-101' },
-    ];
+    const fetchLogs = useCallback(async (isRefresh = false) => {
+        if (isRefresh) {
+            setRefreshing(true);
+        } else {
+            setLoading(true);
+        }
+        setError(null);
+        try {
+            const response = await adminApi.getAuditLogs();
+            setLogs(Array.isArray(response.data) ? response.data : []);
+        } catch (err: any) {
+            console.error('Failed to fetch audit logs:', err);
+            setError('Failed to load audit logs. Please try again.');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, []);
 
-    const filteredLogs = logsData.filter((log) => {
-        const matchesSearch = log.action.toLowerCase().includes(searchQuery.toLowerCase()) || log.user.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesFilter = filter === 'ALL' || log.type === filter;
+    useEffect(() => {
+        fetchLogs();
+    }, [fetchLogs]);
+
+    const formatTimestamp = (dateString?: string): string => {
+        if (!dateString) return 'Just now';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHours = Math.floor(diffMin / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            if (diffSec < 60) return 'Just now';
+            if (diffMin < 60) return `${diffMin}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return `${diffDays}d ago`;
+
+            return date.toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        } catch {
+            return dateString;
+        }
+    };
+
+    const getLogType = (log: any): string => {
+        if (log.type) return log.type;
+        const action = (log.action || '').toUpperCase();
+        if (
+            action.includes('FAIL') ||
+            action.includes('DELETE') ||
+            action.includes('REMOVE') ||
+            action.includes('DANGER') ||
+            action.includes('BLOCK') ||
+            action.includes('DENIED')
+        ) {
+            return 'DANGER';
+        }
+        if (
+            action.includes('CREATE') ||
+            action.includes('SUCCESS') ||
+            action.includes('ADD') ||
+            action.includes('APPROVED') ||
+            action.includes('REGISTER')
+        ) {
+            return 'SUCCESS';
+        }
+        if (
+            action.includes('UPDATE') ||
+            action.includes('EDIT') ||
+            action.includes('WARN') ||
+            action.includes('CHANGE') ||
+            action.includes('MODIFY')
+        ) {
+            return 'WARNING';
+        }
+        return 'INFO';
+    };
+
+    const filteredLogs = logs.filter((log: any) => {
+        const action = log.action || '';
+        const user = log.admin?.name || log.admin?.email || log.user || 'Admin';
+        const detail = log.details || log.detail || '';
+        const logType = getLogType(log);
+
+        const matchesSearch =
+            action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            detail.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesFilter = filter === 'ALL' || logType === filter;
         return matchesSearch && matchesFilter;
     });
 
     const getLogIcon = (type: string) => {
         switch (type) {
-            case 'DANGER': return <ShieldAlert size={20} color="#E53E3E" />;
-            case 'SUCCESS': return <CheckCircle2 size={20} color="#38A169" />;
-            case 'WARNING': return <AlertTriangle size={20} color="#D69E2E" />;
-            default: return <Info size={20} color="#3182CE" />;
+            case 'DANGER':
+                return <ShieldAlert size={20} color="#E53E3E" />;
+            case 'SUCCESS':
+                return <CheckCircle2 size={20} color="#38A169" />;
+            case 'WARNING':
+                return <AlertTriangle size={20} color="#D69E2E" />;
+            default:
+                return <Info size={20} color="#3182CE" />;
         }
     };
 
     const getLogBg = (type: string) => {
         switch (type) {
-            case 'DANGER': return '#FFF5F5';
-            case 'SUCCESS': return '#F0FFF4';
-            case 'WARNING': return '#FFFFF0';
-            default: return '#EBF8FF';
+            case 'DANGER':
+                return '#FFF5F5';
+            case 'SUCCESS':
+                return '#F0FFF4';
+            case 'WARNING':
+                return '#FFFFF0';
+            default:
+                return '#EBF8FF';
         }
     };
 
@@ -62,11 +165,21 @@ export default function AuditLogsScreen({ navigation }: any) {
 
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                <TouchableOpacity
+                    style={styles.backBtn}
+                    onPress={() => navigation.goBack()}
+                    accessibilityLabel="Go back"
+                >
                     <ArrowLeft size={20} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>System Audit Logs</Text>
-                <View style={{ width: 36 }} /> {/* Empty view for balance */}
+                <TouchableOpacity
+                    style={styles.backBtn}
+                    onPress={() => fetchLogs(true)}
+                    accessibilityLabel="Refresh audit logs"
+                >
+                    <RefreshCw size={18} color="#FFFFFF" />
+                </TouchableOpacity>
             </View>
 
             <View style={styles.container}>
@@ -75,7 +188,7 @@ export default function AuditLogsScreen({ navigation }: any) {
                     <Search size={18} color="#A0AEC0" style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search logs by action or user..."
+                        placeholder="Search logs by action, detail or user..."
                         placeholderTextColor="#A0AEC0"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
@@ -95,7 +208,12 @@ export default function AuditLogsScreen({ navigation }: any) {
                             style={[styles.filterTab, filter === f && styles.filterTabActive]}
                             onPress={() => setFilter(f)}
                         >
-                            <Text style={[styles.filterTabText, filter === f && styles.filterTabTextActive]}>
+                            <Text
+                                style={[
+                                    styles.filterTabText,
+                                    filter === f && styles.filterTabTextActive,
+                                ]}
+                            >
                                 {f}
                             </Text>
                         </TouchableOpacity>
@@ -103,30 +221,88 @@ export default function AuditLogsScreen({ navigation }: any) {
                 </ScrollView>
 
                 {/* Logs List */}
-                <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
-                    <View style={styles.listHeader}>
-                        <Text style={styles.resultCount}>{filteredLogs.length} Events Found</Text>
+                {loading ? (
+                    <View style={styles.centerContainer}>
+                        <ActivityIndicator size="large" color="#1A3A6B" />
+                        <Text style={styles.statusText}>Loading audit logs...</Text>
                     </View>
-
-                    {filteredLogs.map((log) => (
-                        <View key={log.id} style={styles.logCard}>
-                            <View style={[styles.iconWrap, { backgroundColor: getLogBg(log.type) }]}>
-                                {getLogIcon(log.type)}
-                            </View>
-                            <View style={styles.logContent}>
-                                <View style={styles.logHeader}>
-                                    <Text style={styles.logAction}>{log.action}</Text>
-                                    <View style={styles.timeWrap}>
-                                        <Clock size={10} color="#A0AEC0" />
-                                        <Text style={styles.logTime}>{log.time}</Text>
-                                    </View>
-                                </View>
-                                <Text style={styles.logDetail}>{log.detail}</Text>
-                                <Text style={styles.logUser}>User: {log.user}</Text>
-                            </View>
+                ) : error ? (
+                    <View style={styles.centerContainer}>
+                        <AlertTriangle size={36} color="#E53E3E" />
+                        <Text style={styles.errorText}>{error}</Text>
+                        <TouchableOpacity
+                            style={styles.retryBtn}
+                            onPress={() => fetchLogs()}
+                        >
+                            <Text style={styles.retryBtnText}>Retry</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <ScrollView
+                        contentContainerStyle={styles.listContainer}
+                        showsVerticalScrollIndicator={false}
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={refreshing}
+                                onRefresh={() => fetchLogs(true)}
+                                colors={['#1A3A6B']}
+                                tintColor="#1A3A6B"
+                            />
+                        }
+                    >
+                        <View style={styles.listHeader}>
+                            <Text style={styles.resultCount}>
+                                {filteredLogs.length} Events Found
+                            </Text>
                         </View>
-                    ))}
-                </ScrollView>
+
+                        {filteredLogs.length === 0 ? (
+                            <View style={styles.emptyContainer}>
+                                <Info size={32} color="#A0AEC0" />
+                                <Text style={styles.emptyTitle}>No audit logs found</Text>
+                                <Text style={styles.emptySubtitle}>
+                                    {searchQuery || filter !== 'ALL'
+                                        ? 'Try adjusting your search or filter criteria'
+                                        : 'No system activity has been recorded yet'}
+                                </Text>
+                            </View>
+                        ) : (
+                            filteredLogs.map((log: any) => {
+                                const logType = getLogType(log);
+                                const timeStr = formatTimestamp(log.createdAt || log.time);
+                                const userName =
+                                    log.admin?.name || log.admin?.email || log.user || 'System';
+                                const detailText = log.details || log.detail || '';
+
+                                return (
+                                    <View key={log.id} style={styles.logCard}>
+                                        <View
+                                            style={[
+                                                styles.iconWrap,
+                                                { backgroundColor: getLogBg(logType) },
+                                            ]}
+                                        >
+                                            {getLogIcon(logType)}
+                                        </View>
+                                        <View style={styles.logContent}>
+                                            <View style={styles.logHeader}>
+                                                <Text style={styles.logAction}>{log.action}</Text>
+                                                <View style={styles.timeWrap}>
+                                                    <Clock size={10} color="#A0AEC0" />
+                                                    <Text style={styles.logTime}>{timeStr}</Text>
+                                                </View>
+                                            </View>
+                                            {detailText ? (
+                                                <Text style={styles.logDetail}>{detailText}</Text>
+                                            ) : null}
+                                            <Text style={styles.logUser}>Admin/User: {userName}</Text>
+                                        </View>
+                                    </View>
+                                );
+                            })
+                        )}
+                    </ScrollView>
+                )}
             </View>
         </SafeAreaView>
     );
@@ -143,9 +319,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#0F2754',
     },
     backBtn: {
-        width: 36, height: 36, borderRadius: 18,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         backgroundColor: 'rgba(255,255,255,0.1)',
-        alignItems: 'center', justifyContent: 'center',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     headerTitle: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
     container: {
@@ -224,9 +403,11 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
     },
     iconWrap: {
-        width: 40, height: 40,
+        width: 40,
+        height: 40,
         borderRadius: 10,
-        alignItems: 'center', justifyContent: 'center',
+        alignItems: 'center',
+        justifyContent: 'center',
         marginRight: 12,
     },
     logContent: { flex: 1 },
@@ -263,5 +444,54 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: '#718096',
         fontWeight: '600',
+    },
+    centerContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+    },
+    statusText: {
+        marginTop: 12,
+        fontSize: 14,
+        color: '#718096',
+        fontWeight: '500',
+    },
+    errorText: {
+        marginTop: 12,
+        fontSize: 14,
+        color: '#E53E3E',
+        textAlign: 'center',
+        fontWeight: '600',
+    },
+    retryBtn: {
+        marginTop: 16,
+        backgroundColor: '#1A3A6B',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+    },
+    retryBtnText: {
+        color: '#FFFFFF',
+        fontWeight: '700',
+        fontSize: 13,
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 48,
+        paddingHorizontal: 20,
+    },
+    emptyTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#2D3748',
+        marginTop: 12,
+    },
+    emptySubtitle: {
+        fontSize: 12,
+        color: '#718096',
+        textAlign: 'center',
+        marginTop: 4,
     },
 });
