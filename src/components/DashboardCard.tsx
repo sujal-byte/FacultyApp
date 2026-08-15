@@ -52,7 +52,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                 {title}
             </Text>
 
-            {subtitle && (
+            {!!subtitle && (
                 <Text style={styles.subtitle} numberOfLines={1}>
                     {subtitle}
                 </Text>

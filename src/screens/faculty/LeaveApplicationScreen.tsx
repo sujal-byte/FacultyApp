@@ -476,7 +476,7 @@ const LeaveApplicationScreen: React.FC<Props> = ({ navigation, route }) => {
                                     <Text style={styles.leaveAppliedOn}>
                                         Applied: {leave.appliedOn}
                                     </Text>
-                                    {leave.remarks && (
+                                    {!!leave.remarks && (
                                         <Text style={styles.leaveRemarks} numberOfLines={1}>
                                             💬 {leave.remarks}
                                         </Text>
