@@ -1,3 +1,4 @@
+import RolesDashboardScreen from '../screens/admin/RolesDashboardScreen';
 // src/navigation/AppNavigator.tsx
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -33,6 +34,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Dashboard" component={FacultyDashboardScreen} />
             <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+            <Stack.Screen name="RolesDashboard" component={RolesDashboardScreen} />
             <Stack.Screen name="BroadcastNotice" component={BroadcastNoticeScreen} />
             <Stack.Screen name="AuditLogs" component={AuditLogsScreen} />
             <Stack.Screen name="Reports" component={ReportsScreen} />

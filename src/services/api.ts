@@ -49,13 +49,27 @@ api.interceptors.response.use(
   }
 );
 
+export interface UserGroup {
+  id: string;
+  name: string;
+  category: string;
+  createdAt?: string;
+  updatedAt?: string;
+  _count?: {
+    users: number;
+  };
+  users?: User[];
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'FACULTY' | 'STUDENT';
+  role: 'ADMIN' | 'FACULTY' | 'STUDENT' | 'MANAGEMENT';
   usn: string | null;
   department?: string | null;
+  dob?: string;
+  groups?: UserGroup[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -118,6 +132,18 @@ export const adminApi = {
   }) => api.post<SubmissionItem>('/submissions', data),
 };
 
+export const rolesApi = {
+  getGroups: () => api.get<UserGroup[]>('/groups'),
+  createGroup: (data: { name: string; category: string }) => api.post<UserGroup>('/groups', data),
+  updateGroup: (id: string, data: { name?: string; category?: string }) => api.put<UserGroup>(`/groups/${id}`, data),
+  deleteGroup: (id: string) => api.delete(`/groups/${id}`),
+
+  getUsers: () => api.get<User[]>('/users'),
+  updateUserRole: (userId: string, role: string) => api.put(`/users/${userId}`, { role }),
+  assignUserGroup: (userId: string, groupId: string) => api.post(`/users/${userId}/groups/${groupId}`),
+  removeUserGroup: (userId: string, groupId: string) => api.delete(`/users/${userId}/groups/${groupId}`),
+};
+
 export const submissionsApi = {
   getAll: () => api.get<SubmissionItem[]>('/submissions'),
   create: (data: {
@@ -129,7 +155,6 @@ export const submissionsApi = {
   }) => api.post<SubmissionItem>('/submissions', data),
 };
 
-// Add this near your existing adminApi export in src/services/api.ts
 export const announcementsApi = {
   getAll: () => api.get('/announcements'),
   create: (data: { title: string; message: string; category: string; targetAudience: string; isUrgent: boolean }) =>

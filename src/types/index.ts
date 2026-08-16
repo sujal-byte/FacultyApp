@@ -102,6 +102,7 @@ export type RootStackParamList = {
     AdminFeedback: undefined;
     AdminQuiz: undefined;
     AdminSubmissions: undefined;
+    RolesDashboard: undefined;
     Feedback: { facultyId: string };
     Timetable: { faculty?: Faculty };
     Announcements: { faculty?: Faculty };

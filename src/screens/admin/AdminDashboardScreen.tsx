@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import {
     Users,
+    ShieldCheck,
     ShieldAlert,
     FileText,
     Bell,
@@ -120,6 +121,17 @@ export default function AdminDashboardScreen({ navigation }: any) {
                 </View>
 
                 <View style={styles.grid}>
+                    <TouchableOpacity
+                        style={styles.actionCard}
+                        onPress={() => navigation.navigate('RolesDashboard')}
+                    >
+                        <View style={[styles.iconWrap, { backgroundColor: '#EDE9FE' }]}>
+                            <ShieldCheck size={20} color="#6B46C1" />
+                        </View>
+                        <Text style={styles.actionTitle}>Manage Roles</Text>
+                        <Text style={styles.actionDesc}>Create, assign & edit user roles</Text>
+                    </TouchableOpacity>
+
                     <TouchableOpacity
                         style={styles.actionCard}
                         onPress={() => navigation.navigate('UserAccounts')}
