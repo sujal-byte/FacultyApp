@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 // For Android emulator, localhost is 10.0.2.2. For iOS simulator/web, it is localhost.
 const BASE_URL = Platform.select({
   ios: 'http://localhost:3000',
-  android: 'http://10.0.2.2:3000',
+  android: 'http://10.178.135.226',
   default: 'http://localhost:3000',
 });
 
@@ -43,7 +43,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       try {
         await SecureStore.deleteItemAsync('userToken');
-      } catch (_) {}
+      } catch (_) { }
     }
     return Promise.reject(error);
   }
