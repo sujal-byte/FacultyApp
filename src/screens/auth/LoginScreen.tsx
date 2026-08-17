@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, Alert, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, Alert, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { api } from '../../services/api';
 import { Calendar as CalendarIcon } from 'lucide-react-native';
@@ -51,8 +51,15 @@ export default function LoginScreen({ navigation }: any) {
             style={styles.container}
         >
             <View style={styles.card}>
-                <Text style={styles.title}>Faculty Portal</Text>
-                <Text style={styles.subtitle}>Sign in with your ID and DOB</Text>
+                <View style={styles.logoContainer}>
+                    <Image
+                        source={require('../../../assets/logo.png')}
+                        style={styles.logo}
+                        resizeMode="contain"
+                    />
+                </View>
+                <Text style={styles.title}>RNSIT Faculty Portal</Text>
+                <Text style={styles.subtitle}>RNS Institute of Technology · Bengaluru</Text>
 
                 <TextInput
                     placeholder="Faculty ID / USN (e.g. 1RN25CS001)"
@@ -118,17 +125,27 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 5,
     },
+    logoContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+    },
+    logo: {
+        width: 80,
+        height: 80,
+    },
     title: {
-        fontSize: 26,
+        fontSize: 22,
         fontWeight: 'bold',
         color: '#1e293b',
-        marginBottom: 6,
+        marginBottom: 4,
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 14,
-        color: '#64748b',
-        marginBottom: 24,
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#1A3A6B',
+        marginBottom: 20,
         textAlign: 'center',
     },
     input: {

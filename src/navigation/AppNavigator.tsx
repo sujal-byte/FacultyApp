@@ -4,6 +4,7 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import LoginScreen from '../screens/auth/LoginScreen';
+import SplashScreen from '../screens/auth/SplashScreen';
 import FacultyDashboardScreen from '../screens/faculty/FacultyDashboardScreen';
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 import UserAccountsScreen from '../screens/admin/UserAccountsScreen';
@@ -26,11 +27,12 @@ const Stack = createStackNavigator<RootStackParamList>();
 export default function AppNavigator() {
     return (
         <Stack.Navigator
-            initialRouteName="Login"
+            initialRouteName="Splash"
             screenOptions={{
                 headerShown: false,
             }}
         >
+            <Stack.Screen name="Splash" component={SplashScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Dashboard" component={FacultyDashboardScreen} />
             <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />

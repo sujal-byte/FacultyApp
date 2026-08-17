@@ -91,6 +91,7 @@ export interface FeedbackPayload {
 }
 
 export type RootStackParamList = {
+    Splash: undefined;
     Login: undefined;
     Dashboard: { faculty?: Faculty };
     FacultyDashboard: { faculty?: Faculty } | undefined;
