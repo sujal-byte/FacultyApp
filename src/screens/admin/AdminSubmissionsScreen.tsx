@@ -25,9 +25,32 @@ import {
     AlertCircle,
     AlertTriangle,
     FileCheck,
+    FileText,
+    Layers,
+    HelpCircle,
+    FlaskConical,
     X,
 } from 'lucide-react-native';
 import { adminApi, submissionsApi, SubmissionItem, User } from '../../services/api';
+
+type CategoryType = 'assignment' | 'project' | 'quiz' | 'lab';
+type CategoryFilter = 'all' | 'urgent' | 'assignment' | 'project' | 'quiz' | 'lab';
+
+const CATEGORY_CONFIG: Record<CategoryType, { Icon: any; color: string; bg: string; badgeBg: string; label: string }> = {
+    assignment: { Icon: FileText, color: '#2B6CB0', bg: '#EBF8FF', badgeBg: '#BEE3F8', label: 'Assignment' },
+    project: { Icon: Layers, color: '#6B46C1', bg: '#FAF5FF', badgeBg: '#E9D8FD', label: 'Project' },
+    quiz: { Icon: HelpCircle, color: '#D69E2E', bg: '#FFFFF0', badgeBg: '#FEFCBF', label: 'Quiz' },
+    lab: { Icon: FlaskConical, color: '#276749', bg: '#F0FFF4', badgeBg: '#C6F6D5', label: 'Lab' },
+};
+
+const CATEGORY_FILTERS: { key: CategoryFilter; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'urgent', label: 'Urgent' },
+    { key: 'assignment', label: 'Assignments' },
+    { key: 'project', label: 'Projects' },
+    { key: 'quiz', label: 'Quizzes' },
+    { key: 'lab', label: 'Labs' },
+];
 
 export default function AdminSubmissionsScreen({ navigation }: any) {
     const [submissions, setSubmissions] = useState<SubmissionItem[]>([]);
@@ -36,6 +59,7 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
+    const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
 
     // Modal state for assigning a new task
     const [isModalVisible, setModalVisible] = useState(false);
@@ -45,6 +69,8 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
         description: '',
         dueDate: '',
         facultyId: '',
+        type: 'assignment' as CategoryType,
+        urgent: false,
         status: 'PENDING' as 'PENDING' | 'SUBMITTED' | 'OVERDUE',
     });
 
@@ -99,6 +125,8 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                 description: newTask.description.trim() || undefined,
                 dueDate: newTask.dueDate.trim(),
                 facultyId: newTask.facultyId,
+                type: newTask.type,
+                urgent: newTask.urgent,
                 status: newTask.status,
             });
 
@@ -109,6 +137,8 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                 description: '',
                 dueDate: '',
                 facultyId: facultyList.length > 0 ? facultyList[0].id : '',
+                type: 'assignment',
+                urgent: false,
                 status: 'PENDING',
             });
             loadData();
@@ -166,9 +196,21 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
         }
     };
 
+    const urgentCount = submissions.filter((s) => s.urgent).length;
+    const pendingCount = submissions.filter((s) => s.status === 'PENDING').length;
+    const submittedCount = submissions.filter((s) => s.status === 'SUBMITTED').length;
+    const overdueCount = submissions.filter((s) => s.status === 'OVERDUE').length;
+
     const filteredSubmissions = submissions.filter((sub) => {
-        const matchesStatus =
-            selectedStatus === 'ALL' || sub.status === selectedStatus;
+        const matchesStatus = selectedStatus === 'ALL' || sub.status === selectedStatus;
+
+        let matchesCategory = true;
+        if (selectedCategory === 'urgent') {
+            matchesCategory = Boolean(sub.urgent);
+        } else if (selectedCategory !== 'all') {
+            matchesCategory = (sub.type || 'assignment').toLowerCase() === selectedCategory.toLowerCase();
+        }
+
         const q = searchQuery.toLowerCase();
         const matchesQuery =
             !q ||
@@ -178,12 +220,8 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
             (sub.faculty?.department && sub.faculty.department.toLowerCase().includes(q)) ||
             (sub.faculty?.usn && sub.faculty.usn.toLowerCase().includes(q));
 
-        return matchesStatus && matchesQuery;
+        return matchesStatus && matchesCategory && matchesQuery;
     });
-
-    const pendingCount = submissions.filter((s) => s.status === 'PENDING').length;
-    const submittedCount = submissions.filter((s) => s.status === 'SUBMITTED').length;
-    const overdueCount = submissions.filter((s) => s.status === 'OVERDUE').length;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -213,7 +251,7 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                     <Search size={18} color="#718096" style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search task title, description, faculty..."
+                        placeholder="Search task, description, faculty..."
                         placeholderTextColor="#A0AEC0"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
@@ -225,7 +263,40 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                     )}
                 </View>
 
-                {/* Filter Tabs with Badges */}
+                {/* Category Filter Chips */}
+                <View style={styles.categoryFiltersContainer}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryFiltersScroll}>
+                        {CATEGORY_FILTERS.map((cat) => {
+                            const isActive = selectedCategory === cat.key;
+                            const count =
+                                cat.key === 'all'
+                                    ? submissions.length
+                                    : cat.key === 'urgent'
+                                    ? urgentCount
+                                    : submissions.filter((s) => (s.type || 'assignment').toLowerCase() === cat.key.toLowerCase()).length;
+
+                            return (
+                                <TouchableOpacity
+                                    key={cat.key}
+                                    style={[styles.catFilterChip, isActive && styles.catFilterChipActive]}
+                                    onPress={() => setSelectedCategory(cat.key)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={[styles.catFilterChipText, isActive && styles.catFilterChipTextActive]}>
+                                        {cat.label}
+                                    </Text>
+                                    <View style={[styles.catFilterBadge, isActive && styles.catFilterBadgeActive]}>
+                                        <Text style={[styles.catFilterBadgeText, isActive && styles.catFilterBadgeTextActive]}>
+                                            {count}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
+
+                {/* Filter Tabs with Status */}
                 <View style={styles.filterRow}>
                     <TouchableOpacity
                         style={[styles.filterTab, selectedStatus === 'ALL' && styles.filterTabActive]}
@@ -287,19 +358,29 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                                 <FileCheck size={48} color="#CBD5E0" />
                                 <Text style={styles.emptyStateTitle}>No submissions found</Text>
                                 <Text style={styles.emptyStateText}>
-                                    {searchQuery ? 'Try adjusting your search filters.' : 'Tap "+" to assign a task to faculty.'}
+                                    {searchQuery || selectedCategory !== 'all' || selectedStatus !== 'ALL'
+                                        ? 'Try adjusting your search or category filters.'
+                                        : 'Tap "+" to assign a task to faculty.'}
                                 </Text>
                             </View>
                         ) : (
                             filteredSubmissions.map((sub) => {
+                                const typeKey = (sub.type || 'assignment').toLowerCase() as CategoryType;
+                                const catConfig = CATEGORY_CONFIG[typeKey] || CATEGORY_CONFIG.assignment;
+                                const TypeIcon = catConfig.Icon;
                                 const statusConfig = getStatusConfig(sub.status);
                                 const StatusIcon = statusConfig.icon;
 
                                 return (
                                     <View key={sub.id} style={styles.card}>
-                                        <View style={[styles.cardAccent, { backgroundColor: statusConfig.color }]} />
+                                        <View
+                                            style={[
+                                                styles.cardAccent,
+                                                { backgroundColor: sub.urgent ? '#E53E3E' : catConfig.color },
+                                            ]}
+                                        />
                                         <View style={styles.cardContent}>
-                                            {/* Top Row: Title & Status Badge */}
+                                            {/* Top Row: Title, Category Badge & Status Badge */}
                                             <View style={styles.cardTopRow}>
                                                 <Text style={styles.cardTitle} numberOfLines={2}>
                                                     {sub.title}
@@ -313,11 +394,27 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                                                         },
                                                     ]}
                                                 >
-                                                    <StatusIcon size={12} color={statusConfig.color} />
+                                                    <StatusIcon size={11} color={statusConfig.color} />
                                                     <Text style={[styles.statusText, { color: statusConfig.color }]}>
                                                         {statusConfig.label}
                                                     </Text>
                                                 </View>
+                                            </View>
+
+                                            {/* Category Badges & Urgent Row */}
+                                            <View style={styles.cardBadgesRow}>
+                                                <View style={[styles.categoryBadge, { backgroundColor: catConfig.bg }]}>
+                                                    <TypeIcon size={12} color={catConfig.color} />
+                                                    <Text style={[styles.categoryBadgeText, { color: catConfig.color }]}>
+                                                        {catConfig.label}
+                                                    </Text>
+                                                </View>
+                                                {sub.urgent && (
+                                                    <View style={styles.urgentBadge}>
+                                                        <AlertTriangle size={11} color="#E53E3E" />
+                                                        <Text style={styles.urgentBadgeText}>Urgent</Text>
+                                                    </View>
+                                                )}
                                             </View>
 
                                             {/* Description if present */}
@@ -337,7 +434,7 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                                                         {sub.faculty?.name || 'Assigned Faculty'}
                                                     </Text>
                                                     <Text style={styles.facultySub}>
-                                                        {sub.faculty?.department || 'Department'} • {sub.faculty?.usn || sub.faculty?.email || 'ID'}
+                                                        {sub.faculty?.department || 'Faculty'} Â· {sub.faculty?.usn || sub.faculty?.email || 'ID'}
                                                     </Text>
                                                 </View>
                                             </View>
@@ -345,8 +442,8 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                                             {/* Due Date & Meta Row */}
                                             <View style={styles.cardBottomRow}>
                                                 <View style={styles.metaItem}>
-                                                    <Calendar size={13} color="#718096" />
-                                                    <Text style={styles.metaText}>
+                                                    <Calendar size={13} color={sub.urgent ? '#E53E3E' : '#718096'} />
+                                                    <Text style={[styles.metaText, sub.urgent && { color: '#E53E3E' }]}>
                                                         Due: <Text style={styles.metaBold}>{formatDate(sub.dueDate)}</Text>
                                                     </Text>
                                                 </View>
@@ -378,14 +475,14 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                         <View style={styles.modalHeader}>
                             <View>
                                 <Text style={styles.modalTitle}>Assign Task</Text>
-                                <Text style={styles.modalSub}>Create a new submission requirement for faculty</Text>
+                                <Text style={styles.modalSub}>Create a submission requirement for faculty</Text>
                             </View>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
                                 <X size={24} color="#4A5568" />
                             </TouchableOpacity>
                         </View>
 
-                        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 450 }}>
                             <Text style={styles.label}>Task Title *</Text>
                             <TextInput
                                 style={styles.input}
@@ -394,6 +491,36 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                                 value={newTask.title}
                                 onChangeText={(t) => setNewTask({ ...newTask, title: t })}
                             />
+
+                            {/* Category Selector matching Faculty Screen */}
+                            <Text style={styles.label}>Submission Category *</Text>
+                            <View style={styles.categoryGridModal}>
+                                {(['assignment', 'project', 'quiz', 'lab'] as CategoryType[]).map((catKey) => {
+                                    const conf = CATEGORY_CONFIG[catKey];
+                                    const Icon = conf.Icon;
+                                    const isSelected = newTask.type === catKey;
+                                    return (
+                                        <TouchableOpacity
+                                            key={catKey}
+                                            style={[
+                                                styles.catOptionModal,
+                                                isSelected && { backgroundColor: conf.color, borderColor: conf.color },
+                                            ]}
+                                            onPress={() => setNewTask({ ...newTask, type: catKey })}
+                                        >
+                                            <Icon size={16} color={isSelected ? '#FFFFFF' : conf.color} />
+                                            <Text
+                                                style={[
+                                                    styles.catOptionModalText,
+                                                    isSelected ? { color: '#FFFFFF' } : { color: '#4A5568' },
+                                                ]}
+                                            >
+                                                {conf.label}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
 
                             <Text style={styles.label}>Assign to Faculty *</Text>
                             {facultyList.length === 0 ? (
@@ -423,7 +550,7 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                             <Text style={styles.label}>Description / Instructions (Optional)</Text>
                             <TextInput
                                 style={[styles.input, styles.textArea]}
-                                placeholder="Details about this submission or deadlines..."
+                                placeholder="Details about this submission or guidelines..."
                                 placeholderTextColor="#A0AEC0"
                                 multiline
                                 numberOfLines={3}
@@ -439,6 +566,24 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                                 value={newTask.dueDate}
                                 onChangeText={(t) => setNewTask({ ...newTask, dueDate: t })}
                             />
+
+                            {/* Urgent Toggle */}
+                            <TouchableOpacity
+                                style={[styles.urgentToggle, newTask.urgent && styles.urgentToggleActive]}
+                                onPress={() => setNewTask({ ...newTask, urgent: !newTask.urgent })}
+                                activeOpacity={0.8}
+                            >
+                                <AlertTriangle size={18} color={newTask.urgent ? '#E53E3E' : '#A0AEC0'} />
+                                <View style={{ flex: 1, marginLeft: 10 }}>
+                                    <Text style={[styles.urgentToggleTitle, newTask.urgent && { color: '#E53E3E' }]}>
+                                        Mark as Urgent
+                                    </Text>
+                                    <Text style={styles.urgentToggleSub}>Highlights with urgent priority</Text>
+                                </View>
+                                <View style={[styles.checkbox, newTask.urgent && styles.checkboxActive]}>
+                                    {newTask.urgent && <View style={styles.checkboxInner} />}
+                                </View>
+                            </TouchableOpacity>
 
                             <Text style={styles.label}>Initial Status</Text>
                             <View style={styles.statusSelector}>
@@ -519,18 +664,49 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: 12,
         paddingHorizontal: 12,
-        height: 46,
-        marginBottom: 12,
+        height: 44,
+        marginBottom: 10,
         borderWidth: 1,
         borderColor: '#E2E8F0',
     },
     searchIcon: { marginRight: 8 },
     searchInput: { flex: 1, fontSize: 13, color: '#2D3748' },
-    filterRow: { flexDirection: 'row', gap: 6, marginBottom: 14 },
+
+    // Category Filter Chips
+    categoryFiltersContainer: { marginBottom: 10 },
+    categoryFiltersScroll: { flexDirection: 'row', gap: 6 },
+    catFilterChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    catFilterChipActive: { backgroundColor: '#1A3A6B', borderColor: '#1A3A6B' },
+    catFilterChipText: { fontSize: 11, fontWeight: '700', color: '#718096' },
+    catFilterChipTextActive: { color: '#FFFFFF' },
+    catFilterBadge: {
+        backgroundColor: '#EDF2F7',
+        borderRadius: 8,
+        minWidth: 18,
+        height: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 4,
+    },
+    catFilterBadgeActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
+    catFilterBadgeText: { fontSize: 10, fontWeight: '800', color: '#718096' },
+    catFilterBadgeTextActive: { color: '#FFFFFF' },
+
+    filterRow: { flexDirection: 'row', gap: 6, marginBottom: 12 },
     filterTab: {
         flex: 1,
-        paddingVertical: 8,
-        borderRadius: 10,
+        paddingVertical: 7,
+        borderRadius: 8,
         backgroundColor: '#E2E8F0',
         alignItems: 'center',
         justifyContent: 'center',
@@ -578,12 +754,34 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        paddingHorizontal: 8,
+        paddingHorizontal: 7,
         paddingVertical: 3,
         borderRadius: 6,
         borderWidth: 1,
     },
     statusText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
+    cardBadgesRow: { flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' },
+    categoryBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    categoryBadgeText: { fontSize: 11, fontWeight: '700' },
+    urgentBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        backgroundColor: '#FFF5F5',
+        paddingHorizontal: 7,
+        paddingVertical: 3,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#FEB2B2',
+    },
+    urgentBadgeText: { fontSize: 10, fontWeight: '800', color: '#E53E3E' },
     cardDesc: { fontSize: 12, color: '#4A5568', lineHeight: 16, marginBottom: 10 },
     facultyRow: {
         flexDirection: 'row',
@@ -656,6 +854,26 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#2D3748',
     },
+    categoryGridModal: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    catOptionModal: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        paddingVertical: 10,
+        borderRadius: 10,
+        backgroundColor: '#F7FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    catOptionModalText: {
+        fontSize: 11,
+        fontWeight: '700',
+    },
     textArea: { height: 75, textAlignVertical: 'top' },
     facultyChipsScroll: { flexDirection: 'row', marginBottom: 4 },
     facultyChip: {
@@ -673,6 +891,48 @@ const styles = StyleSheet.create({
     facultyChipDept: { fontSize: 10, color: '#718096', marginTop: 2 },
     facultyChipDeptActive: { color: 'rgba(255,255,255,0.8)' },
     helperText: { fontSize: 11, color: '#A0AEC0', fontStyle: 'italic' },
+    urgentToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F7FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 10,
+        padding: 12,
+        marginTop: 12,
+    },
+    urgentToggleActive: {
+        backgroundColor: '#FFF5F5',
+        borderColor: '#FEB2B2',
+    },
+    urgentToggleTitle: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#2D3748',
+    },
+    urgentToggleSub: {
+        fontSize: 11,
+        color: '#A0AEC0',
+        marginTop: 1,
+    },
+    checkbox: {
+        width: 20,
+        height: 20,
+        borderRadius: 4,
+        borderWidth: 2,
+        borderColor: '#CBD5E0',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxActive: {
+        borderColor: '#E53E3E',
+    },
+    checkboxInner: {
+        width: 10,
+        height: 10,
+        borderRadius: 2,
+        backgroundColor: '#E53E3E',
+    },
     statusSelector: { flexDirection: 'row', gap: 8 },
     statusOption: {
         flex: 1,

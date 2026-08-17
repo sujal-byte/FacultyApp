@@ -13,7 +13,8 @@ import {
     Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Send, AlertTriangle, Users, BookOpen, Calendar } from 'lucide-react-native';
+import { ArrowLeft, Send, AlertTriangle, Users, BookOpen, Calendar, Layers, Award, GraduationCap, Bell, Tag } from 'lucide-react-native';
+import { rolesApi, UserGroup } from '../../services/api';
 
 export default function BroadcastNoticeScreen({ navigation }: any) {
     const [title, setTitle] = useState('');
@@ -22,12 +23,32 @@ export default function BroadcastNoticeScreen({ navigation }: any) {
     const [targetAudience, setTargetAudience] = useState('All');
     const [isUrgent, setIsUrgent] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [customCategories, setCustomCategories] = useState<string[]>([]);
 
     const categories = [
         { label: 'Academic', icon: BookOpen },
         { label: 'Event', icon: Calendar },
-        { label: 'Admin', icon: Users },
+        { label: 'Administrative', icon: Users },
+        { label: 'Department', icon: Layers },
+        { label: 'Committee', icon: Users },
+        { label: 'Club', icon: Award },
+        { label: 'Exam', icon: GraduationCap },
+        { label: 'General', icon: Bell },
     ];
+
+    React.useEffect(() => {
+        rolesApi.getGroups()
+            .then((res) => {
+                if (res.data) {
+                    const groupCats = res.data.map((g: UserGroup) => g.category).filter(Boolean);
+                    const uniqueExtra = Array.from(new Set(groupCats)).filter(
+                        (c) => !categories.some((cat) => cat.label.toLowerCase() === (c as string).toLowerCase())
+                    ) as string[];
+                    setCustomCategories(uniqueExtra);
+                }
+            })
+            .catch(() => { });
+    }, []);
 
     const audiences = ['All', 'Faculty', 'Students'];
 
@@ -119,7 +140,7 @@ export default function BroadcastNoticeScreen({ navigation }: any) {
                 {/* Category Selection */}
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>Category</Text>
-                    <View style={styles.row}>
+                    <View style={styles.categoryGrid}>
                         {categories.map((cat) => {
                             const Icon = cat.icon;
                             const isActive = category === cat.label;
@@ -128,10 +149,27 @@ export default function BroadcastNoticeScreen({ navigation }: any) {
                                     key={cat.label}
                                     style={[styles.categoryCard, isActive && styles.categoryCardActive]}
                                     onPress={() => setCategory(cat.label)}
+                                    activeOpacity={0.7}
                                 >
                                     <Icon size={18} color={isActive ? '#FFFFFF' : '#4A5568'} />
-                                    <Text style={[styles.categoryText, isActive && styles.categoryTextActive]}>
+                                    <Text style={[styles.categoryText, isActive && styles.categoryTextActive]} numberOfLines={1}>
                                         {cat.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                        {customCategories.map((customCat) => {
+                            const isActive = category === customCat;
+                            return (
+                                <TouchableOpacity
+                                    key={customCat}
+                                    style={[styles.categoryCard, isActive && styles.categoryCardActive]}
+                                    onPress={() => setCategory(customCat)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Tag size={18} color={isActive ? '#FFFFFF' : '#4A5568'} />
+                                    <Text style={[styles.categoryText, isActive && styles.categoryTextActive]} numberOfLines={1}>
+                                        {customCat}
                                     </Text>
                                 </TouchableOpacity>
                             );
@@ -260,25 +298,34 @@ const styles = StyleSheet.create({
     chipTextActive: {
         color: '#FFFFFF',
     },
+    categoryGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
     categoryCard: {
-        flex: 1,
+        width: '23%',
+        minWidth: 74,
+        flexGrow: 1,
         backgroundColor: '#FFFFFF',
         borderWidth: 1,
         borderColor: '#E2E8F0',
         borderRadius: 12,
-        paddingVertical: 14,
+        paddingVertical: 12,
+        paddingHorizontal: 4,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 6,
     },
     categoryCardActive: {
-        backgroundColor: '#3182CE',
-        borderColor: '#3182CE',
+        backgroundColor: '#1A3A6B',
+        borderColor: '#1A3A6B',
     },
     categoryText: {
         fontSize: 11,
         fontWeight: '700',
         color: '#4A5568',
+        textAlign: 'center',
     },
     categoryTextActive: {
         color: '#FFFFFF',

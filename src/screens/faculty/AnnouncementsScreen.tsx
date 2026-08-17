@@ -17,6 +17,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Plus, X, Send, AlertTriangle } from 'lucide-react-native';
 import { announcementsApi } from '../../services/api';
 
+const CATEGORIES = [
+    'Academic',
+    'Event',
+    'Administrative',
+    'Department',
+    'Committee',
+    'Club',
+    'Exam',
+    'General',
+];
+
 export default function AnnouncementsScreen({ navigation }: any) {
     const [announcements, setAnnouncements] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -153,9 +164,28 @@ export default function AnnouncementsScreen({ navigation }: any) {
                                 onChangeText={(t) => setNewNotice({ ...newNotice, message: t })}
                             />
 
+                            <Text style={styles.label}>Category</Text>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.categoryScroll}
+                            >
+                                {CATEGORIES.map((cat) => (
+                                    <TouchableOpacity
+                                        key={cat}
+                                        style={[styles.categoryChip, newNotice.category === cat && styles.categoryChipActive]}
+                                        onPress={() => setNewNotice({ ...newNotice, category: cat })}
+                                    >
+                                        <Text style={[styles.categoryChipText, newNotice.category === cat && styles.categoryChipTextActive]}>
+                                            {cat}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+
                             <Text style={styles.label}>Audience</Text>
                             <View style={styles.row}>
-                                {['Students', 'All'].map((aud) => (
+                                {['Students', 'Faculty', 'All'].map((aud) => (
                                     <TouchableOpacity
                                         key={aud}
                                         style={[styles.chip, newNotice.targetAudience === aud && styles.chipActive]}
@@ -165,6 +195,21 @@ export default function AnnouncementsScreen({ navigation }: any) {
                                     </TouchableOpacity>
                                 ))}
                             </View>
+
+                            {/* Urgent Toggle */}
+                            <TouchableOpacity
+                                style={[styles.urgentToggle, newNotice.isUrgent && styles.urgentToggleActive]}
+                                onPress={() => setNewNotice({ ...newNotice, isUrgent: !newNotice.isUrgent })}
+                                activeOpacity={0.8}
+                            >
+                                <AlertTriangle size={18} color={newNotice.isUrgent ? '#E53E3E' : '#A0AEC0'} />
+                                <View style={{ flex: 1, marginLeft: 10 }}>
+                                    <Text style={[styles.urgentTitle, newNotice.isUrgent && { color: '#E53E3E' }]}>Mark as Urgent</Text>
+                                </View>
+                                <View style={[styles.checkbox, newNotice.isUrgent && styles.checkboxActive]}>
+                                    {newNotice.isUrgent && <View style={styles.checkboxInner} />}
+                                </View>
+                            </TouchableOpacity>
 
                             <TouchableOpacity
                                 style={[styles.submitBtn, isSubmitting && { opacity: 0.7 }]}
@@ -217,6 +262,17 @@ const styles = StyleSheet.create({
     chipActive: { backgroundColor: '#3182CE', borderColor: '#3182CE' },
     chipText: { fontSize: 12, fontWeight: '600', color: '#4A5568' },
     chipTextActive: { color: '#FFF' },
-    submitBtn: { backgroundColor: '#2B6CB0', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 24, marginBottom: 20 },
+    categoryScroll: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
+    categoryChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#EDF2F7', borderWidth: 1, borderColor: '#E2E8F0' },
+    categoryChipActive: { backgroundColor: '#1A3A6B', borderColor: '#1A3A6B' },
+    categoryChipText: { fontSize: 12, fontWeight: '700', color: '#4A5568' },
+    categoryChipTextActive: { color: '#FFFFFF' },
+    urgentToggle: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, padding: 12, marginTop: 12 },
+    urgentToggleActive: { backgroundColor: '#FFF5F5', borderColor: '#FEB2B2' },
+    urgentTitle: { fontSize: 13, fontWeight: '700', color: '#2D3748' },
+    checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: '#CBD5E0', alignItems: 'center', justifyContent: 'center' },
+    checkboxActive: { borderColor: '#E53E3E' },
+    checkboxInner: { width: 10, height: 10, borderRadius: 2, backgroundColor: '#E53E3E' },
+    submitBtn: { backgroundColor: '#2B6CB0', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 20, marginBottom: 20 },
     submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' }
 });

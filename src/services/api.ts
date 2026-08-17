@@ -2,12 +2,11 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-// For Android emulator, localhost is 10.0.2.2. For iOS simulator/web, it is localhost.
-const BASE_URL = Platform.select({
-  ios: 'http://localhost:3000',
-  android: 'http://10.178.135.226',
-  default: 'http://localhost:3000',
-});
+// Set local server IP & Port for physical device / emulator testing
+const SERVER_IP = '10.178.135.226';
+const SERVER_PORT = '3000';
+
+const BASE_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -95,6 +94,8 @@ export interface SubmissionItem {
   dueDate: string;
   status: 'PENDING' | 'SUBMITTED' | 'OVERDUE';
   facultyId: string;
+  type?: 'assignment' | 'project' | 'quiz' | 'lab' | string;
+  urgent?: boolean;
   faculty?: {
     id: string;
     name: string;
@@ -128,6 +129,8 @@ export const adminApi = {
     description?: string;
     dueDate: string;
     facultyId: string;
+    type?: 'assignment' | 'project' | 'quiz' | 'lab' | string;
+    urgent?: boolean;
     status?: 'PENDING' | 'SUBMITTED' | 'OVERDUE';
   }) => api.post<SubmissionItem>('/submissions', data),
 };
@@ -151,6 +154,8 @@ export const submissionsApi = {
     description?: string;
     dueDate: string;
     facultyId: string;
+    type?: 'assignment' | 'project' | 'quiz' | 'lab' | string;
+    urgent?: boolean;
     status?: 'PENDING' | 'SUBMITTED' | 'OVERDUE';
   }) => api.post<SubmissionItem>('/submissions', data),
 };
