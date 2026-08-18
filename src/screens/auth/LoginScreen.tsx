@@ -58,7 +58,7 @@ export default function LoginScreen({ navigation }: any) {
                         resizeMode="contain"
                     />
                 </View>
-                <Text style={styles.title}>RNSIT Faculty Portal</Text>
+                <Text style={styles.title}>RNSIT Portal</Text>
                 <Text style={styles.subtitle}>RNS Institute of Technology · Bengaluru</Text>
 
                 <TextInput

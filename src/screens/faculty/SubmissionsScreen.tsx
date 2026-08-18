@@ -9,6 +9,8 @@ import {
     StatusBar,
     ActivityIndicator,
     RefreshControl,
+    Modal,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -26,6 +28,9 @@ import {
     CheckCircle,
     BookOpen,
     RefreshCw,
+    X,
+    Calendar,
+    Users,
 } from 'lucide-react-native';
 
 type SubmissionsNav = StackNavigationProp<RootStackParamList, 'Submissions'>;
@@ -68,6 +73,7 @@ const SubmissionsScreen: React.FC<Props> = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+    const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
 
     const fetchSubmissions = useCallback(async (isRefresh = false) => {
         if (isRefresh) {
@@ -255,7 +261,12 @@ const SubmissionsScreen: React.FC<Props> = ({ navigation }) => {
                             const notSubmitted = total - submitted;
 
                             return (
-                                <View key={sub.id} style={styles.card}>
+                                <TouchableOpacity
+                                    key={sub.id}
+                                    style={styles.card}
+                                    onPress={() => setSelectedSubmission(sub)}
+                                    activeOpacity={0.85}
+                                >
                                     {/* Left accent */}
                                     <View
                                         style={[
@@ -364,13 +375,159 @@ const SubmissionsScreen: React.FC<Props> = ({ navigation }) => {
                                             </View>
                                         </View>
                                     </View>
-                                </View>
+                                </TouchableOpacity>
                             );
                         })
                     )}
                     <View style={{ height: 32 }} />
                 </ScrollView>
             )}
+
+            {/* Submission Detail Modal */}
+            <Modal
+                visible={selectedSubmission !== null}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setSelectedSubmission(null)}
+            >
+                <SafeAreaView style={styles.detailSafeArea}>
+                    <View style={styles.detailContainer}>
+                        {/* Header: Close Icon on Top Left */}
+                        <View style={styles.detailHeader}>
+                            <TouchableOpacity
+                                style={styles.detailCloseBtn}
+                                onPress={() => setSelectedSubmission(null)}
+                                accessibilityLabel="Close modal"
+                            >
+                                <X size={22} color="#0F2754" />
+                            </TouchableOpacity>
+                            <Text style={styles.detailHeaderTitle}>Submission Details</Text>
+                            <View style={{ width: 38 }} />
+                        </View>
+
+                        {selectedSubmission && (() => {
+                            const typeKey = (selectedSubmission.type || 'assignment') as keyof typeof TYPE_CONFIG;
+                            const conf = TYPE_CONFIG[typeKey] || TYPE_CONFIG.assignment;
+                            const total = selectedSubmission.totalStudents ?? 60;
+                            const submitted = selectedSubmission.submittedCount ?? 0;
+                            const progress = total > 0 ? Math.round((submitted / total) * 100) : 0;
+                            const courseCode = selectedSubmission.courseCode || 'CS401';
+                            const courseColor = COURSE_COLORS[courseCode] ?? '#1A3A6B';
+                            const notSubmitted = total - submitted;
+
+                            return (
+                                <ScrollView
+                                    style={styles.detailScroll}
+                                    contentContainerStyle={styles.detailContent}
+                                    showsVerticalScrollIndicator={false}
+                                >
+                                    {/* Badges Row */}
+                                    <View style={styles.detailBadgesRow}>
+                                        <View style={[styles.courseBadge, { backgroundColor: courseColor, paddingHorizontal: 9, paddingVertical: 4 }]}>
+                                            <BookOpen size={11} color="#fff" strokeWidth={2.5} />
+                                            <Text style={[styles.courseBadgeText, { fontSize: 11 }]}>{courseCode}</Text>
+                                        </View>
+                                        <View style={[styles.typeBadge, { backgroundColor: conf.badgeBg, paddingHorizontal: 9, paddingVertical: 4 }]}>
+                                            <Text style={[styles.typeBadgeText, { color: conf.color, fontSize: 11 }]}>
+                                                {conf.label}
+                                            </Text>
+                                        </View>
+                                        {selectedSubmission.urgent && (
+                                            <View style={[styles.urgentTag, { paddingHorizontal: 9, paddingVertical: 4 }]}>
+                                                <AlertTriangle size={11} color="#E53E3E" strokeWidth={2.5} />
+                                                <Text style={[styles.urgentTagText, { fontSize: 11 }]}>Urgent</Text>
+                                            </View>
+                                        )}
+                                    </View>
+
+                                    {/* Title & Course */}
+                                    <Text style={styles.detailTitle}>{selectedSubmission.title}</Text>
+                                    {selectedSubmission.courseName ? (
+                                        <Text style={styles.detailSubtitle}>{selectedSubmission.courseName}</Text>
+                                    ) : null}
+
+                                    {/* Due Date Card */}
+                                    <View style={[styles.detailDueCard, selectedSubmission.urgent && styles.detailDueCardUrgent]}>
+                                        <Clock size={18} color={selectedSubmission.urgent ? '#E53E3E' : '#2B6CB0'} strokeWidth={2} />
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.detailDueLabel}>Due Date</Text>
+                                            <Text style={[styles.detailDueValue, selectedSubmission.urgent && { color: '#E53E3E' }]}>
+                                                {selectedSubmission.dueDateDisplay ||
+                                                    (selectedSubmission.dueDate
+                                                        ? new Date(selectedSubmission.dueDate).toLocaleDateString(undefined, {
+                                                              weekday: 'short',
+                                                              year: 'numeric',
+                                                              month: 'short',
+                                                              day: 'numeric',
+                                                          })
+                                                        : 'Pending')}
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    {/* Description Section */}
+                                    <View style={styles.detailSectionBox}>
+                                        <Text style={styles.detailSectionHeading}>Description</Text>
+                                        <Text style={styles.detailDescText}>
+                                            {selectedSubmission.description || 'No detailed instructions provided for this task.'}
+                                        </Text>
+                                    </View>
+
+                                    {/* Evaluation Progress Section */}
+                                    <View style={styles.detailSectionBox}>
+                                        <Text style={styles.detailSectionHeading}>Submission Progress</Text>
+                                        <View style={styles.progressLabelRow}>
+                                            <Text style={styles.progressLeft}>{submitted} of {total} Students</Text>
+                                            <Text style={styles.progressRight}>{progress}% Complete</Text>
+                                        </View>
+                                        <View style={styles.detailProgressTrack}>
+                                            <View
+                                                style={[
+                                                    styles.detailProgressFill,
+                                                    {
+                                                        width: `${progress}%`,
+                                                        backgroundColor: progress >= 50 ? '#38A169' : conf.color,
+                                                    },
+                                                ]}
+                                            />
+                                        </View>
+
+                                        <View style={styles.detailStatsGrid}>
+                                            <View style={styles.detailStatBox}>
+                                                <Text style={[styles.detailStatNum, { color: '#38A169' }]}>{submitted}</Text>
+                                                <Text style={styles.detailStatLbl}>Submitted</Text>
+                                            </View>
+                                            <View style={styles.detailStatBox}>
+                                                <Text style={[styles.detailStatNum, { color: '#E53E3E' }]}>{notSubmitted}</Text>
+                                                <Text style={styles.detailStatLbl}>Pending</Text>
+                                            </View>
+                                            <View style={styles.detailStatBox}>
+                                                <Text style={[styles.detailStatNum, { color: '#2B6CB0' }]}>{total}</Text>
+                                                <Text style={styles.detailStatLbl}>Total Class</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </ScrollView>
+                            );
+                        })()}
+
+                        {/* Bottom 'Acknowledge Task' Button */}
+                        <View style={styles.detailFooter}>
+                            <TouchableOpacity
+                                style={styles.acknowledgeBtn}
+                                onPress={() => {
+                                    Alert.alert('Success', 'Task acknowledged.');
+                                    setSelectedSubmission(null);
+                                }}
+                                activeOpacity={0.85}
+                            >
+                                <CheckCircle size={20} color="#FFFFFF" />
+                                <Text style={styles.acknowledgeBtnText}>Acknowledge Task</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </SafeAreaView>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -612,6 +769,160 @@ const styles = StyleSheet.create({
     },
     emptyTitle: { fontSize: 16, fontWeight: '700', color: '#A0AEC0' },
     emptyBody: { fontSize: 13, color: '#CBD5E0', textAlign: 'center' },
+
+    // Detail Modal Styles
+    detailSafeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    detailContainer: { flex: 1, backgroundColor: '#F8FAFC' },
+    detailHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
+    },
+    detailCloseBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#F0F4F8',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    detailHeaderTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#0F2754',
+    },
+    detailScroll: { flex: 1 },
+    detailContent: { padding: 20 },
+    detailBadgesRow: {
+        flexDirection: 'row',
+        gap: 8,
+        flexWrap: 'wrap',
+        marginBottom: 12,
+    },
+    detailTitle: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: '#1A3A6B',
+        lineHeight: 28,
+        marginBottom: 4,
+    },
+    detailSubtitle: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#718096',
+        marginBottom: 16,
+    },
+    detailDueCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: '#EBF8FF',
+        borderWidth: 1,
+        borderColor: '#BEE3F8',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 16,
+    },
+    detailDueCardUrgent: {
+        backgroundColor: '#FFF5F5',
+        borderColor: '#FEB2B2',
+    },
+    detailDueLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#718096',
+        textTransform: 'uppercase',
+    },
+    detailDueValue: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#2B6CB0',
+        marginTop: 2,
+    },
+    detailSectionBox: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 16,
+    },
+    detailSectionHeading: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#A0AEC0',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 10,
+    },
+    detailDescText: {
+        fontSize: 14,
+        color: '#2D3748',
+        lineHeight: 22,
+    },
+    detailProgressTrack: {
+        height: 8,
+        backgroundColor: '#EDF2F7',
+        borderRadius: 4,
+        overflow: 'hidden',
+        marginTop: 8,
+        marginBottom: 16,
+    },
+    detailProgressFill: {
+        height: '100%',
+        borderRadius: 4,
+    },
+    detailStatsGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 10,
+        padding: 12,
+    },
+    detailStatBox: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    detailStatNum: {
+        fontSize: 18,
+        fontWeight: '800',
+    },
+    detailStatLbl: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#718096',
+        marginTop: 2,
+    },
+    detailFooter: {
+        padding: 16,
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+        borderTopColor: '#E2E8F0',
+    },
+    acknowledgeBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        backgroundColor: '#0F2754',
+        borderRadius: 12,
+        paddingVertical: 15,
+        elevation: 2,
+        shadowColor: '#0F2754',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+    },
+    acknowledgeBtnText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '800',
+    },
 });
 
 export default SubmissionsScreen;

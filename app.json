@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "RNSIT Faculty Portal",
-    "slug": "rnsit-faculty-portal",
+    "name": "RNSIT Portal",
+    "slug": "rnsit--portal",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-v2.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash-icon-v2.png",
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },

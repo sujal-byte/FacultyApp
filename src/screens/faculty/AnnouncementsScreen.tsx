@@ -14,7 +14,7 @@ import {
     Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Plus, X, Send, AlertTriangle } from 'lucide-react-native';
+import { ArrowLeft, Plus, X, Send, AlertTriangle, CheckCircle, Calendar, Users } from 'lucide-react-native';
 import { announcementsApi } from '../../services/api';
 
 const CATEGORIES = [
@@ -31,6 +31,9 @@ const CATEGORIES = [
 export default function AnnouncementsScreen({ navigation }: any) {
     const [announcements, setAnnouncements] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Detail modal state for selected announcement
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState<any | null>(null);
 
     // Modal state for composing a notice
     const [isModalVisible, setModalVisible] = useState(false);
@@ -104,7 +107,12 @@ export default function AnnouncementsScreen({ navigation }: any) {
                             <Text style={styles.emptyText}>No announcements found.</Text>
                         ) : (
                             announcements.map((item) => (
-                                <View key={item.id} style={[styles.card, item.isUrgent && styles.cardUrgent]}>
+                                <TouchableOpacity
+                                    key={item.id}
+                                    style={[styles.card, item.isUrgent && styles.cardUrgent]}
+                                    onPress={() => setSelectedAnnouncement(item)}
+                                    activeOpacity={0.8}
+                                >
                                     <View style={styles.cardHeader}>
                                         <Text style={styles.cardCategory}>{item.category}</Text>
                                         <Text style={styles.cardDate}>
@@ -112,7 +120,7 @@ export default function AnnouncementsScreen({ navigation }: any) {
                                         </Text>
                                     </View>
                                     <Text style={styles.cardTitle}>{item.title}</Text>
-                                    <Text style={styles.cardMessage}>{item.message}</Text>
+                                    <Text style={styles.cardMessage} numberOfLines={3}>{item.message}</Text>
                                     <View style={styles.cardFooter}>
                                         <Text style={styles.cardAudience}>To: {item.targetAudience}</Text>
                                         {item.isUrgent && (
@@ -122,7 +130,7 @@ export default function AnnouncementsScreen({ navigation }: any) {
                                             </View>
                                         )}
                                     </View>
-                                </View>
+                                </TouchableOpacity>
                             ))
                         )}
                     </ScrollView>
@@ -135,7 +143,7 @@ export default function AnnouncementsScreen({ navigation }: any) {
             </TouchableOpacity>
 
             {/* Compose Notice Modal */}
-            <Modal visible={isModalVisible} animationType="slide" transparent={true}>
+            <Modal visible={isModalVisible} animationType="slide" transparent={true} onRequestClose={() => setModalVisible(false)}>
                 <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
@@ -222,6 +230,105 @@ export default function AnnouncementsScreen({ navigation }: any) {
                     </View>
                 </KeyboardAvoidingView>
             </Modal>
+
+            {/* Announcement Detail Modal */}
+            <Modal
+                visible={selectedAnnouncement !== null}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setSelectedAnnouncement(null)}
+            >
+                <SafeAreaView style={styles.detailSafeArea}>
+                    <View style={styles.detailContainer}>
+                        {/* Header: Close Icon on Top Left */}
+                        <View style={styles.detailHeader}>
+                            <TouchableOpacity
+                                style={styles.detailCloseBtn}
+                                onPress={() => setSelectedAnnouncement(null)}
+                                accessibilityLabel="Close modal"
+                            >
+                                <X size={22} color="#1A3A6B" />
+                            </TouchableOpacity>
+                            <Text style={styles.detailHeaderTitle}>Announcement Details</Text>
+                            <View style={{ width: 38 }} />
+                        </View>
+
+                        {selectedAnnouncement && (
+                            <ScrollView
+                                style={styles.detailScroll}
+                                contentContainerStyle={styles.detailContent}
+                                showsVerticalScrollIndicator={false}
+                            >
+                                {/* Meta Badges */}
+                                <View style={styles.detailMetaRow}>
+                                    <View style={styles.detailCategoryBadge}>
+                                        <Text style={styles.detailCategoryText}>
+                                            {selectedAnnouncement.category || 'General'}
+                                        </Text>
+                                    </View>
+                                    {selectedAnnouncement.isUrgent && (
+                                        <View style={styles.urgentBadge}>
+                                            <AlertTriangle size={12} color="#E53E3E" />
+                                            <Text style={styles.urgentText}>URGENT</Text>
+                                        </View>
+                                    )}
+                                </View>
+
+                                {/* Title */}
+                                <Text style={styles.detailTitle}>{selectedAnnouncement.title}</Text>
+
+                                {/* Date and Audience Card */}
+                                <View style={styles.detailInfoCard}>
+                                    <View style={styles.detailInfoRow}>
+                                        <Calendar size={15} color="#718096" />
+                                        <Text style={styles.detailInfoLabel}>Date:</Text>
+                                        <Text style={styles.detailInfoValue}>
+                                            {selectedAnnouncement.createdAt
+                                                ? new Date(selectedAnnouncement.createdAt).toLocaleDateString(undefined, {
+                                                      weekday: 'short',
+                                                      year: 'numeric',
+                                                      month: 'short',
+                                                      day: 'numeric',
+                                                  })
+                                                : 'N/A'}
+                                        </Text>
+                                    </View>
+                                    {selectedAnnouncement.targetAudience && (
+                                        <View style={[styles.detailInfoRow, { marginTop: 8 }]}>
+                                            <Users size={15} color="#718096" />
+                                            <Text style={styles.detailInfoLabel}>Audience:</Text>
+                                            <Text style={styles.detailInfoValue}>
+                                                {selectedAnnouncement.targetAudience}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+
+                                {/* Full Message */}
+                                <View style={styles.messageBox}>
+                                    <Text style={styles.messageSectionHeading}>Message</Text>
+                                    <Text style={styles.detailMessageText}>{selectedAnnouncement.message}</Text>
+                                </View>
+                            </ScrollView>
+                        )}
+
+                        {/* Bottom 'Mark as Read' Button */}
+                        <View style={styles.detailFooter}>
+                            <TouchableOpacity
+                                style={styles.markAsReadBtn}
+                                onPress={() => {
+                                    Alert.alert('Success', 'Announcement marked as read.');
+                                    setSelectedAnnouncement(null);
+                                }}
+                                activeOpacity={0.85}
+                            >
+                                <CheckCircle size={20} color="#FFFFFF" />
+                                <Text style={styles.markAsReadBtnText}>Mark as Read</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </SafeAreaView>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -249,7 +356,7 @@ const styles = StyleSheet.create({
     // FAB Styles
     fab: { position: 'absolute', bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: '#2B6CB0', alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
 
-    // Modal Styles
+    // Compose Modal Styles
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '85%' },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
@@ -274,5 +381,128 @@ const styles = StyleSheet.create({
     checkboxActive: { borderColor: '#E53E3E' },
     checkboxInner: { width: 10, height: 10, borderRadius: 2, backgroundColor: '#E53E3E' },
     submitBtn: { backgroundColor: '#2B6CB0', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 20, marginBottom: 20 },
-    submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' }
+    submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+
+    // Detail Modal Styles
+    detailSafeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    detailContainer: { flex: 1, backgroundColor: '#F8FAFC' },
+    detailHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
+    },
+    detailCloseBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#F0F4F8',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    detailHeaderTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#1A3A6B',
+    },
+    detailScroll: { flex: 1 },
+    detailContent: { padding: 20 },
+    detailMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    detailCategoryBadge: {
+        backgroundColor: '#EBF8FF',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#BEE3F8',
+    },
+    detailCategoryText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#2B6CB0',
+    },
+    detailTitle: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: '#1A3A6B',
+        lineHeight: 28,
+        marginBottom: 16,
+    },
+    detailInfoCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 16,
+    },
+    detailInfoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    detailInfoLabel: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#718096',
+    },
+    detailInfoValue: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#2D3748',
+    },
+    messageBox: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    messageSectionHeading: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#A0AEC0',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 10,
+    },
+    detailMessageText: {
+        fontSize: 14,
+        color: '#2D3748',
+        lineHeight: 22,
+    },
+    detailFooter: {
+        padding: 16,
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+        borderTopColor: '#E2E8F0',
+    },
+    markAsReadBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        backgroundColor: '#1A3A6B',
+        borderRadius: 12,
+        paddingVertical: 15,
+        elevation: 2,
+        shadowColor: '#1A3A6B',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+    },
+    markAsReadBtnText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '800',
+    },
 });
