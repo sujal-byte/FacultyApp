@@ -9,10 +9,11 @@ const SERVER_PORT = '3000';
 const BASE_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
 
 export const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: 'https://erasure-poster-coconut.ngrok-free.dev',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true', // <-- This magic line bypasses the HTML warning
   },
 });
 
