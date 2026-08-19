@@ -67,6 +67,39 @@ export interface TimetableSlot {
     room: string;
     section: string;
     type: 'lecture' | 'lab' | 'free';
+    tags?: string[];
+}
+
+export interface Student {
+    id: string;
+    name: string;
+    rollNumber: string;
+    tags: string[];
+    avatar?: string;
+    email?: string;
+}
+
+export interface AttendanceStudentEntry {
+    studentId: string;
+    rollNumber: string;
+    name: string;
+    status: 'present' | 'absent';
+}
+
+export interface AttendanceSessionPayload {
+    key: string;
+    subjectId: string;
+    courseCode: string;
+    courseName: string;
+    section: string;
+    room: string;
+    date: string;
+    timestamp: string;
+    expiryDate: string;
+    totalStudents: number;
+    presentCount: number;
+    absentCount: number;
+    records: AttendanceStudentEntry[];
 }
 
 export interface LeaveApplication {

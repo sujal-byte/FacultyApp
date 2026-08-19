@@ -1,5 +1,6 @@
 // src/data/mockData.ts
-import { Submission, Announcement, Course, TimetableSlot, Faculty, LeaveApplication } from '../types';
+import { Submission, Announcement, Course, TimetableSlot, Faculty, LeaveApplication, Student } from '../types';
+import { UserGroup, User } from '../services/api';
 
 export const DEMO_FACULTY: Faculty = {
     id: 'FAC-2024-0042',
@@ -240,62 +241,78 @@ export const MY_COURSES: Course[] = [
 // Lunch: 13:20 – 14:05
 // Period 5:  14:05 – 15:00
 // Period 6:  15:00 – 15:55
-// Period 7:  15:55 – 16:50  (ends ~5pm)
-
 export const TIMETABLE: TimetableSlot[] = [
     // MONDAY
-    { id: 'tt-mon-1', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Mon', startTime: '09:20', endTime: '10:15', room: 'Lab 204', section: 'Sec A', type: 'lecture' },
-    { id: 'tt-mon-2', courseCode: 'CS302', courseName: 'Database Systems', day: 'Mon', startTime: '10:15', endTime: '11:10', room: 'Room 301', section: 'Sec C', type: 'lecture' },
-    { id: 'tt-mon-3', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Mon', startTime: '11:30', endTime: '12:25', room: 'Lab 205', section: 'Sec A', type: 'lab' },
-    { id: 'tt-mon-4', courseCode: 'CS302', courseName: 'Database Systems', day: 'Mon', startTime: '12:25', endTime: '13:20', room: 'Room 301', section: 'Sec C', type: 'lecture' },
+    { id: 'tt-mon-1', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Mon', startTime: '09:20', endTime: '10:15', room: 'Lab 204', section: 'Sec A', type: 'lecture', tags: ['Batch_2026', 'CSE-A', 'CS401'] },
+    { id: 'tt-mon-2', courseCode: 'CS302', courseName: 'Database Systems', day: 'Mon', startTime: '10:15', endTime: '11:10', room: 'Room 301', section: 'Sec C', type: 'lecture', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
+    { id: 'tt-mon-3', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Mon', startTime: '11:30', endTime: '12:25', room: 'Lab 205', section: 'Sec A', type: 'lab', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
+    { id: 'tt-mon-4', courseCode: 'CS302', courseName: 'Database Systems', day: 'Mon', startTime: '12:25', endTime: '13:20', room: 'Room 301', section: 'Sec C', type: 'lecture', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
     { id: 'tt-mon-5', courseCode: 'FREE', courseName: 'Free Period', day: 'Mon', startTime: '14:05', endTime: '15:00', room: '—', section: '—', type: 'free' },
-    { id: 'tt-mon-6', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Mon', startTime: '15:00', endTime: '15:55', room: 'Lab 204', section: 'Sec B', type: 'lab' },
+    { id: 'tt-mon-6', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Mon', startTime: '15:00', endTime: '15:55', room: 'Lab 204', section: 'Sec B', type: 'lab', tags: ['Batch_2026', 'CSE-B', 'CS401'] },
     { id: 'tt-mon-7', courseCode: 'FREE', courseName: 'Free Period', day: 'Mon', startTime: '15:55', endTime: '16:50', room: '—', section: '—', type: 'free' },
 
     // TUESDAY
-    { id: 'tt-tue-1', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Tue', startTime: '09:20', endTime: '10:15', room: 'Lab 205', section: 'Sec A', type: 'lecture' },
-    { id: 'tt-tue-2', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Tue', startTime: '10:15', endTime: '11:10', room: 'Room 402', section: 'Sec A', type: 'lecture' },
+    { id: 'tt-tue-1', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Tue', startTime: '09:20', endTime: '10:15', room: 'Lab 205', section: 'Sec A', type: 'lecture', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
+    { id: 'tt-tue-2', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Tue', startTime: '10:15', endTime: '11:10', room: 'Room 402', section: 'Sec A', type: 'lecture', tags: ['Batch_2026', 'CSE-A', 'CS401'] },
     { id: 'tt-tue-3', courseCode: 'FREE', courseName: 'Free Period', day: 'Tue', startTime: '11:30', endTime: '12:25', room: '—', section: '—', type: 'free' },
-    { id: 'tt-tue-4', courseCode: 'CS302', courseName: 'Database Systems', day: 'Tue', startTime: '12:25', endTime: '13:20', room: 'Room 301', section: 'Sec C', type: 'lecture' },
-    { id: 'tt-tue-5', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Tue', startTime: '14:05', endTime: '15:00', room: 'Lab 204', section: 'Sec B', type: 'lecture' },
-    { id: 'tt-tue-6', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Tue', startTime: '15:00', endTime: '15:55', room: 'Lab 205', section: 'Sec A', type: 'lab' },
+    { id: 'tt-tue-4', courseCode: 'CS302', courseName: 'Database Systems', day: 'Tue', startTime: '12:25', endTime: '13:20', room: 'Room 301', section: 'Sec C', type: 'lecture', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
+    { id: 'tt-tue-5', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Tue', startTime: '14:05', endTime: '15:00', room: 'Lab 204', section: 'Sec B', type: 'lecture', tags: ['Batch_2026', 'CSE-B', 'CS401'] },
+    { id: 'tt-tue-6', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Tue', startTime: '15:00', endTime: '15:55', room: 'Lab 205', section: 'Sec A', type: 'lab', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
     { id: 'tt-tue-7', courseCode: 'FREE', courseName: 'Free Period', day: 'Tue', startTime: '15:55', endTime: '16:50', room: '—', section: '—', type: 'free' },
 
     // WEDNESDAY
-    { id: 'tt-wed-1', courseCode: 'CS302', courseName: 'Database Systems', day: 'Wed', startTime: '09:20', endTime: '10:15', room: 'Room 301', section: 'Sec C', type: 'lecture' },
+    { id: 'tt-wed-1', courseCode: 'CS302', courseName: 'Database Systems', day: 'Wed', startTime: '09:20', endTime: '10:15', room: 'Room 301', section: 'Sec C', type: 'lecture', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
     { id: 'tt-wed-2', courseCode: 'FREE', courseName: 'Free Period', day: 'Wed', startTime: '10:15', endTime: '11:10', room: '—', section: '—', type: 'free' },
-    { id: 'tt-wed-3', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Wed', startTime: '11:30', endTime: '12:25', room: 'Room 402', section: 'Sec A', type: 'lecture' },
-    { id: 'tt-wed-4', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Wed', startTime: '12:25', endTime: '13:20', room: 'Lab 204', section: 'Sec B', type: 'lab' },
-    { id: 'tt-wed-5', courseCode: 'CS302', courseName: 'Database Systems', day: 'Wed', startTime: '14:05', endTime: '15:00', room: 'Lab 206', section: 'Sec C', type: 'lab' },
-    { id: 'tt-wed-6', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Wed', startTime: '15:00', endTime: '15:55', room: 'Room 402', section: 'Sec A', type: 'lecture' },
+    { id: 'tt-wed-3', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Wed', startTime: '11:30', endTime: '12:25', room: 'Room 402', section: 'Sec A', type: 'lecture', tags: ['Batch_2026', 'CSE-A', 'CS401'] },
+    { id: 'tt-wed-4', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Wed', startTime: '12:25', endTime: '13:20', room: 'Lab 204', section: 'Sec B', type: 'lab', tags: ['Batch_2026', 'CSE-B', 'CS401'] },
+    { id: 'tt-wed-5', courseCode: 'CS302', courseName: 'Database Systems', day: 'Wed', startTime: '14:05', endTime: '15:00', room: 'Lab 206', section: 'Sec C', type: 'lab', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
+    { id: 'tt-wed-6', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Wed', startTime: '15:00', endTime: '15:55', room: 'Room 402', section: 'Sec A', type: 'lecture', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
     { id: 'tt-wed-7', courseCode: 'FREE', courseName: 'Free Period', day: 'Wed', startTime: '15:55', endTime: '16:50', room: '—', section: '—', type: 'free' },
 
     // THURSDAY
-    { id: 'tt-thu-1', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Thu', startTime: '09:20', endTime: '10:15', room: 'Room 402', section: 'Sec A', type: 'lecture' },
-    { id: 'tt-thu-2', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Thu', startTime: '10:15', endTime: '11:10', room: 'Lab 204', section: 'Sec A', type: 'lab' },
-    { id: 'tt-thu-3', courseCode: 'CS302', courseName: 'Database Systems', day: 'Thu', startTime: '11:30', endTime: '12:25', room: 'Room 301', section: 'Sec C', type: 'lecture' },
+    { id: 'tt-thu-1', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Thu', startTime: '09:20', endTime: '10:15', room: 'Room 402', section: 'Sec A', type: 'lecture', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
+    { id: 'tt-thu-2', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Thu', startTime: '10:15', endTime: '11:10', room: 'Lab 204', section: 'Sec A', type: 'lab', tags: ['Batch_2026', 'CSE-A', 'CS401'] },
+    { id: 'tt-thu-3', courseCode: 'CS302', courseName: 'Database Systems', day: 'Thu', startTime: '11:30', endTime: '12:25', room: 'Room 301', section: 'Sec C', type: 'lecture', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
     { id: 'tt-thu-4', courseCode: 'FREE', courseName: 'Free Period', day: 'Thu', startTime: '12:25', endTime: '13:20', room: '—', section: '—', type: 'free' },
-    { id: 'tt-thu-5', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Thu', startTime: '14:05', endTime: '15:00', room: 'Lab 205', section: 'Sec A', type: 'lab' },
-    { id: 'tt-thu-6', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Thu', startTime: '15:00', endTime: '15:55', room: 'Room 402', section: 'Sec B', type: 'lecture' },
+    { id: 'tt-thu-5', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Thu', startTime: '14:05', endTime: '15:00', room: 'Lab 205', section: 'Sec A', type: 'lab', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
+    { id: 'tt-thu-6', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Thu', startTime: '15:00', endTime: '15:55', room: 'Room 402', section: 'Sec B', type: 'lecture', tags: ['Batch_2026', 'CSE-B', 'CS401'] },
     { id: 'tt-thu-7', courseCode: 'FREE', courseName: 'Free Period', day: 'Thu', startTime: '15:55', endTime: '16:50', room: '—', section: '—', type: 'free' },
 
     // FRIDAY
-    { id: 'tt-fri-1', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Fri', startTime: '09:20', endTime: '10:15', room: 'Room 402', section: 'Sec A', type: 'lecture' },
-    { id: 'tt-fri-2', courseCode: 'CS302', courseName: 'Database Systems', day: 'Fri', startTime: '10:15', endTime: '11:10', room: 'Lab 206', section: 'Sec C', type: 'lab' },
-    { id: 'tt-fri-3', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Fri', startTime: '11:30', endTime: '12:25', room: 'Room 402', section: 'Sec A', type: 'lecture' },
-    { id: 'tt-fri-4', courseCode: 'CS302', courseName: 'Database Systems', day: 'Fri', startTime: '12:25', endTime: '13:20', room: 'Room 301', section: 'Sec C', type: 'lecture' },
+    { id: 'tt-fri-1', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Fri', startTime: '09:20', endTime: '10:15', room: 'Room 402', section: 'Sec A', type: 'lecture', tags: ['Batch_2026', 'CSE-A', 'CS401'] },
+    { id: 'tt-fri-2', courseCode: 'CS302', courseName: 'Database Systems', day: 'Fri', startTime: '10:15', endTime: '11:10', room: 'Lab 206', section: 'Sec C', type: 'lab', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
+    { id: 'tt-fri-3', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Fri', startTime: '11:30', endTime: '12:25', room: 'Room 402', section: 'Sec A', type: 'lecture', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
+    { id: 'tt-fri-4', courseCode: 'CS302', courseName: 'Database Systems', day: 'Fri', startTime: '12:25', endTime: '13:20', room: 'Room 301', section: 'Sec C', type: 'lecture', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
     { id: 'tt-fri-5', courseCode: 'FREE', courseName: 'Free Period', day: 'Fri', startTime: '14:05', endTime: '15:00', room: '—', section: '—', type: 'free' },
-    { id: 'tt-fri-6', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Fri', startTime: '15:00', endTime: '15:55', room: 'Lab 204', section: 'Sec B', type: 'lab' },
-    { id: 'tt-fri-7', courseCode: 'FREE', courseName: 'Free Period', day: 'Fri', startTime: '15:55', endTime: '16:50', room: '—', section: '—', type: 'free' },
+    { id: 'tt-fri-6', courseCode: 'CS401', courseName: 'Machine Learning', day: 'Fri', startTime: '15:00', endTime: '15:55', room: 'Lab 204', section: 'Sec B', type: 'lab', tags: ['Batch_2026', 'CSE-B', 'CS401'] },
+    { id: 'tt-fri-7', courseCode: 'FREE', courseName: 'Department Meeting', day: 'Fri', startTime: '15:55', endTime: '16:50', room: 'Conf Hall', section: 'All', type: 'free' },
 
     // SATURDAY
-    { id: 'tt-sat-1', courseCode: 'CS302', courseName: 'Database Systems', day: 'Sat', startTime: '09:20', endTime: '10:15', room: 'Room 301', section: 'Sec C', type: 'lecture' },
-    { id: 'tt-sat-2', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Sat', startTime: '10:15', endTime: '11:10', room: 'Room 402', section: 'Sec A', type: 'lecture' },
-    { id: 'tt-sat-3', courseCode: 'FREE', courseName: 'Free Period', day: 'Sat', startTime: '11:30', endTime: '12:25', room: '—', section: '—', type: 'free' },
+    { id: 'tt-sat-1', courseCode: 'CS302', courseName: 'Database Systems', day: 'Sat', startTime: '09:20', endTime: '10:15', room: 'Room 301', section: 'Sec C', type: 'lecture', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
+    { id: 'tt-sat-2', courseCode: 'CS501', courseName: 'Cloud Computing', day: 'Sat', startTime: '10:15', endTime: '11:10', room: 'Room 402', section: 'Sec A', type: 'lecture', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
+    { id: 'tt-sat-3', courseCode: 'FREE', courseName: 'Project Mentoring', day: 'Sat', startTime: '11:30', endTime: '12:25', room: 'Lab 204', section: 'Final Yr', type: 'lab' },
     { id: 'tt-sat-4', courseCode: 'FREE', courseName: 'Free Period', day: 'Sat', startTime: '12:25', endTime: '13:20', room: '—', section: '—', type: 'free' },
     { id: 'tt-sat-5', courseCode: 'FREE', courseName: 'Free Period', day: 'Sat', startTime: '14:05', endTime: '15:00', room: '—', section: '—', type: 'free' },
     { id: 'tt-sat-6', courseCode: 'FREE', courseName: 'Free Period', day: 'Sat', startTime: '15:00', endTime: '15:55', room: '—', section: '—', type: 'free' },
     { id: 'tt-sat-7', courseCode: 'FREE', courseName: 'Free Period', day: 'Sat', startTime: '15:55', endTime: '16:50', room: '—', section: '—', type: 'free' },
+];
+
+export const MOCK_STUDENTS: Student[] = [
+    { id: 'std-001', name: 'Aarav Sharma', rollNumber: '22CS0101', tags: ['Batch_2026', 'CSE-A', 'CS401'] },
+    { id: 'std-002', name: 'Ananya Iyer', rollNumber: '22CS0102', tags: ['Batch_2026', 'CSE-A', 'CS401'] },
+    { id: 'std-003', name: 'Rohan Verma', rollNumber: '22CS0103', tags: ['Batch_2026', 'CSE-A', 'CS401'] },
+    { id: 'std-004', name: 'Sneha Patel', rollNumber: '22CS0104', tags: ['Batch_2026', 'CSE-A', 'CS401'] },
+    { id: 'std-005', name: 'Vikram Rao', rollNumber: '22CS0105', tags: ['Batch_2026', 'CSE-B', 'CS401'] },
+    { id: 'std-006', name: 'Priya Menon', rollNumber: '22CS0106', tags: ['Batch_2026', 'CSE-B', 'CS401'] },
+    { id: 'std-007', name: 'Aditya Nair', rollNumber: '22CS0107', tags: ['Batch_2026', 'CSE-B', 'CS401'] },
+    { id: 'std-008', name: 'Riya Sen', rollNumber: '23CS0201', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
+    { id: 'std-009', name: 'Siddharth Roy', rollNumber: '23CS0202', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
+    { id: 'std-010', name: 'Tanvi Kulkarni', rollNumber: '23CS0203', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
+    { id: 'std-011', name: 'Ishaan Gupta', rollNumber: '23CS0204', tags: ['Batch_2027', 'CSE-C', 'CS302'] },
+    { id: 'std-012', name: 'Neha Deshmukh', rollNumber: '21CS0301', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
+    { id: 'std-013', name: 'Rahul Joshi', rollNumber: '21CS0302', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
+    { id: 'std-014', name: 'Pooja Hegde', rollNumber: '21CS0303', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
+    { id: 'std-015', name: 'Karthik Reddy', rollNumber: '21CS0304', tags: ['Batch_2025', 'CSE-A', 'CS501'] },
 ];
 
 export const LEAVE_APPLICATIONS: LeaveApplication[] = [
@@ -390,3 +407,148 @@ export const LEAVE_APPLICATIONS: LeaveApplication[] = [
 ];
 
 export const TOTAL_LEAVE_QUOTA = 12;
+
+export const DEFAULT_ROLE_GROUPS: UserGroup[] = [
+    // Batches
+    { id: 'grp-batch-2029', name: 'Batch_2029', category: 'Batch', _count: { users: 2 } },
+    { id: 'grp-batch-2028', name: 'Batch_2028', category: 'Batch', _count: { users: 0 } },
+    { id: 'grp-batch-2027', name: 'Batch_2027', category: 'Batch', _count: { users: 4 } },
+    { id: 'grp-batch-2026', name: 'Batch_2026', category: 'Batch', _count: { users: 7 } },
+    { id: 'grp-batch-2025', name: 'Batch_2025', category: 'Batch', _count: { users: 4 } },
+
+    // Sections
+    { id: 'grp-sec-csej', name: 'CSE-J', category: 'Section', _count: { users: 2 } },
+    { id: 'grp-sec-csea', name: 'CSE-A', category: 'Section', _count: { users: 8 } },
+    { id: 'grp-sec-cseb', name: 'CSE-B', category: 'Section', _count: { users: 3 } },
+    { id: 'grp-sec-csec', name: 'CSE-C', category: 'Section', _count: { users: 4 } },
+    { id: 'grp-sec-ita', name: 'IT-A', category: 'Section', _count: { users: 0 } },
+    { id: 'grp-sec-aimla', name: 'AIML-A', category: 'Section', _count: { users: 0 } },
+
+    // Courses / Subjects
+    { id: 'grp-crs-cs401', name: 'CS401', category: 'Course', _count: { users: 7 } },
+    { id: 'grp-crs-cs302', name: 'CS302', category: 'Course', _count: { users: 4 } },
+    { id: 'grp-crs-cs501', name: 'CS501', category: 'Course', _count: { users: 4 } },
+
+    // Department & Committees
+    { id: 'grp-dept-cse', name: 'HOD - Computer Science', category: 'Department', _count: { users: 1 } },
+    { id: 'grp-com-exam', name: 'Exam Cell Coordinator', category: 'Committee', _count: { users: 2 } },
+    { id: 'grp-com-placement', name: 'Placement Cell', category: 'Committee', _count: { users: 1 } },
+    { id: 'grp-club-ai', name: 'AI & Robotics Club', category: 'Club', _count: { users: 5 } },
+];
+
+export const MOCK_USERS_WITH_ROLES: User[] = [
+    {
+        id: 'usr-001',
+        name: 'Dr. Priya Nair',
+        email: 'priya.nair@college.edu.in',
+        role: 'FACULTY',
+        usn: null,
+        department: 'Computer Science & Engineering',
+        groups: [
+            { id: 'grp-dept-cse', name: 'HOD - Computer Science', category: 'Department' },
+            { id: 'grp-crs-cs401', name: 'CS401', category: 'Course' },
+            { id: 'grp-crs-cs501', name: 'CS501', category: 'Course' },
+        ],
+    },
+    {
+        id: 'usr-002',
+        name: 'Prof. Rajesh Kumar',
+        email: 'rajesh.k@college.edu.in',
+        role: 'FACULTY',
+        usn: null,
+        department: 'Computer Science & Engineering',
+        groups: [
+            { id: 'grp-com-exam', name: 'Exam Cell Coordinator', category: 'Committee' },
+            { id: 'grp-crs-cs302', name: 'CS302', category: 'Course' },
+        ],
+    },
+    {
+        id: 'usr-003',
+        name: 'Aarav Sharma',
+        email: 'aarav.22cs0101@college.edu.in',
+        role: 'STUDENT',
+        usn: '22CS0101',
+        department: 'Computer Science',
+        groups: [
+            { id: 'grp-batch-2026', name: 'Batch_2026', category: 'Batch' },
+            { id: 'grp-sec-csea', name: 'CSE-A', category: 'Section' },
+            { id: 'grp-crs-cs401', name: 'CS401', category: 'Course' },
+            { id: 'grp-club-ai', name: 'AI & Robotics Club', category: 'Club' },
+        ],
+    },
+    {
+        id: 'usr-004',
+        name: 'Ananya Iyer',
+        email: 'ananya.22cs0102@college.edu.in',
+        role: 'STUDENT',
+        usn: '22CS0102',
+        department: 'Computer Science',
+        groups: [
+            { id: 'grp-batch-2026', name: 'Batch_2026', category: 'Batch' },
+            { id: 'grp-sec-csea', name: 'CSE-A', category: 'Section' },
+            { id: 'grp-crs-cs401', name: 'CS401', category: 'Course' },
+        ],
+    },
+    {
+        id: 'usr-005',
+        name: 'Vikram Rao',
+        email: 'vikram.22cs0105@college.edu.in',
+        role: 'STUDENT',
+        usn: '22CS0105',
+        department: 'Computer Science',
+        groups: [
+            { id: 'grp-batch-2026', name: 'Batch_2026', category: 'Batch' },
+            { id: 'grp-sec-cseb', name: 'CSE-B', category: 'Section' },
+            { id: 'grp-crs-cs401', name: 'CS401', category: 'Course' },
+        ],
+    },
+    {
+        id: 'usr-006',
+        name: 'Riya Sen',
+        email: 'riya.23cs0201@college.edu.in',
+        role: 'STUDENT',
+        usn: '23CS0201',
+        department: 'Computer Science',
+        groups: [
+            { id: 'grp-batch-2027', name: 'Batch_2027', category: 'Batch' },
+            { id: 'grp-sec-csec', name: 'CSE-C', category: 'Section' },
+            { id: 'grp-crs-cs302', name: 'CS302', category: 'Course' },
+        ],
+    },
+    {
+        id: 'usr-007',
+        name: 'Kavya Deshmukh',
+        email: 'kavya.25cs0901@college.edu.in',
+        role: 'STUDENT',
+        usn: '25CS0901',
+        department: 'Computer Science',
+        groups: [
+            { id: 'grp-batch-2029', name: 'Batch_2029', category: 'Batch' },
+            { id: 'grp-sec-csej', name: 'CSE-J', category: 'Section' },
+        ],
+    },
+    {
+        id: 'usr-008',
+        name: 'Manish Verma',
+        email: 'manish.25cs0902@college.edu.in',
+        role: 'STUDENT',
+        usn: '25CS0902',
+        department: 'Computer Science',
+        groups: [
+            { id: 'grp-batch-2029', name: 'Batch_2029', category: 'Batch' },
+            { id: 'grp-sec-csej', name: 'CSE-J', category: 'Section' },
+        ],
+    },
+    {
+        id: 'usr-009',
+        name: 'Dr. Ramesh Sundaram',
+        email: 'admin.dean@college.edu.in',
+        role: 'ADMIN',
+        usn: null,
+        department: 'Administration',
+        groups: [
+            { id: 'grp-com-exam', name: 'Exam Cell Coordinator', category: 'Committee' },
+            { id: 'grp-com-placement', name: 'Placement Cell', category: 'Committee' },
+        ],
+    },
+];
