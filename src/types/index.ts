@@ -32,6 +32,7 @@ export interface Submission {
     status?: string;
     facultyId?: string;
     faculty?: any;
+    targetRoles?: string[];
     createdAt?: string;
     updatedAt?: string;
 }
@@ -44,6 +45,8 @@ export interface Announcement {
     postedDate: string;
     category: 'academic' | 'admin' | 'event' | 'urgent';
     isRead: boolean;
+    targetAudience?: string;
+    targetRoles?: string[];
 }
 
 export interface Course {
@@ -143,5 +146,7 @@ export type RootStackParamList = {
     LeaveApplication: { faculty?: Faculty };
     Courses: { faculty?: Faculty };
     Submissions: { faculty?: Faculty } | undefined;
+    CreateAnnouncement: { faculty?: Faculty } | undefined;
+    CreateSubmission: { faculty?: Faculty } | undefined;
     Profile: { faculty?: Faculty };
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     Text,
@@ -14,8 +14,30 @@ import {
     Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Plus, X, Send, AlertTriangle, CheckCircle, Calendar, Users } from 'lucide-react-native';
-import { announcementsApi } from '../../services/api';
+import { ArrowLeft, Plus, X, Send, AlertTriangle, CheckCircle, Calendar, Users, Search, Tag, Check } from 'lucide-react-native';
+import { announcementsApi, rolesApi, UserGroup } from '../../services/api';
+
+const DEFAULT_ROLES = [
+    'Batch_2029',
+    'Batch_2028',
+    'Batch_2027',
+    'Batch_2026',
+    'Batch_2025',
+    'CSE-Core',
+    'CSE-J',
+    'CSE-A',
+    'CSE-B',
+    'CSE-C',
+    'IT-A',
+    'AIML-A',
+    'CS401',
+    'CS302',
+    'CS501',
+    'HOD - Computer Science',
+    'Exam Cell Coordinator',
+    'Placement Cell',
+    'AI & Robotics Club',
+];
 
 const CATEGORIES = [
     'Academic',
@@ -42,13 +64,47 @@ export default function AnnouncementsScreen({ navigation }: any) {
         title: '',
         message: '',
         category: 'Academic',
-        targetAudience: 'Students',
         isUrgent: false
     });
 
+    // Target roles state
+    const [availableRoles, setAvailableRoles] = useState<string[]>(DEFAULT_ROLES);
+    const [roleSearchQuery, setRoleSearchQuery] = useState('');
+    const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+
     useEffect(() => {
         fetchAnnouncements();
+        rolesApi.getGroups()
+            .then((res) => {
+                if (res.data && Array.isArray(res.data)) {
+                    const dynamicNames = res.data.map((g: UserGroup) => g.name).filter(Boolean);
+                    const merged = Array.from(new Set([...DEFAULT_ROLES, ...dynamicNames]));
+                    setAvailableRoles(merged);
+                }
+            })
+            .catch(() => {});
     }, []);
+
+    // Filtered roles based on search query
+    const filteredRoles = useMemo(() => {
+        const q = roleSearchQuery.trim().toLowerCase();
+        if (!q) return availableRoles;
+        return availableRoles.filter((r) => r.toLowerCase().includes(q));
+    }, [availableRoles, roleSearchQuery]);
+
+    const isAllStudentsSelected = selectedRoles.length === 0;
+
+    const handleSelectAllStudents = () => {
+        setSelectedRoles([]);
+    };
+
+    const handleToggleRole = (role: string) => {
+        if (selectedRoles.includes(role)) {
+            setSelectedRoles(selectedRoles.filter((r) => r !== role));
+        } else {
+            setSelectedRoles([...selectedRoles, role]);
+        }
+    };
 
     const fetchAnnouncements = async () => {
         try {
@@ -62,17 +118,34 @@ export default function AnnouncementsScreen({ navigation }: any) {
     };
 
     const handleSendNotice = async () => {
+        if (!isAllStudentsSelected && selectedRoles.length === 0) {
+            Alert.alert('Target Audience Required', 'Please select at least one role or "All Students" before broadcasting.');
+            return;
+        }
+
         if (!newNotice.title.trim() || !newNotice.message.trim()) {
             Alert.alert('Missing Fields', 'Please enter a title and message.');
             return;
         }
 
+        const targetRolesPayload = selectedRoles.length > 0 ? selectedRoles : ['All Students'];
+        const targetAudienceLabel = selectedRoles.length > 0 ? selectedRoles.join(', ') : 'All Students';
+
         setIsSubmitting(true);
         try {
-            await announcementsApi.create(newNotice);
-            Alert.alert('Success', 'Notice sent successfully!');
+            await announcementsApi.create({
+                title: newNotice.title.trim(),
+                message: newNotice.message.trim(),
+                category: newNotice.category,
+                targetAudience: targetAudienceLabel,
+                targetRoles: targetRolesPayload,
+                isUrgent: newNotice.isUrgent,
+            });
+            Alert.alert('Success', `Notice broadcasted to ${targetAudienceLabel}!`);
             setModalVisible(false);
-            setNewNotice({ title: '', message: '', category: 'Academic', targetAudience: 'Students', isUrgent: false });
+            setNewNotice({ title: '', message: '', category: 'Academic', isUrgent: false });
+            setSelectedRoles([]);
+            setRoleSearchQuery('');
 
             // Refresh list
             setLoading(true);
@@ -154,6 +227,100 @@ export default function AnnouncementsScreen({ navigation }: any) {
                         </View>
 
                         <ScrollView showsVerticalScrollIndicator={false}>
+                            {/* Target Audience Section */}
+                            <View style={styles.modalAudienceSection}>
+                                <View style={styles.modalAudienceHeader}>
+                                    <Text style={styles.label}>Target Audience</Text>
+                                    <View style={[styles.audienceBadge, isAllStudentsSelected ? styles.audienceBadgeAll : styles.audienceBadgeTargeted]}>
+                                        <Text style={[styles.audienceBadgeText, isAllStudentsSelected ? styles.audienceBadgeTextAll : styles.audienceBadgeTextTargeted]}>
+                                            {isAllStudentsSelected ? 'All Students' : `${selectedRoles.length} Selected`}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* Search Bar */}
+                                <View style={styles.modalSearchBar}>
+                                    <Search size={16} color="#718096" style={{ marginRight: 6 }} />
+                                    <TextInput
+                                        style={styles.modalSearchInput}
+                                        placeholder="Search roles (e.g. Batch_2029, CSE-Core)..."
+                                        placeholderTextColor="#A0AEC0"
+                                        value={roleSearchQuery}
+                                        onChangeText={setRoleSearchQuery}
+                                        autoCapitalize="none"
+                                    />
+                                    {roleSearchQuery.length > 0 && (
+                                        <TouchableOpacity onPress={() => setRoleSearchQuery('')}>
+                                            <X size={14} color="#718096" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                                {/* Roles Chips */}
+                                <View style={styles.modalChipsWrap}>
+                                    {/* 'All Students' Chip */}
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.modalRoleChip,
+                                            styles.allStudentsChip,
+                                            isAllStudentsSelected && styles.allStudentsChipActive,
+                                        ]}
+                                        onPress={handleSelectAllStudents}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Users
+                                            size={12}
+                                            color={isAllStudentsSelected ? '#FFFFFF' : '#1A3A6B'}
+                                            strokeWidth={2.5}
+                                        />
+                                        <Text
+                                            style={[
+                                                styles.modalRoleChipText,
+                                                isAllStudentsSelected && styles.modalRoleChipTextActive,
+                                            ]}
+                                        >
+                                            All Students
+                                        </Text>
+                                        {isAllStudentsSelected && (
+                                            <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                                        )}
+                                    </TouchableOpacity>
+
+                                    {/* Filtered Role Chips */}
+                                    {filteredRoles.map((role) => {
+                                        const isSelected = selectedRoles.includes(role);
+                                        return (
+                                            <TouchableOpacity
+                                                key={role}
+                                                style={[
+                                                    styles.modalRoleChip,
+                                                    isSelected && styles.modalRoleChipActive,
+                                                ]}
+                                                onPress={() => handleToggleRole(role)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Tag
+                                                    size={11}
+                                                    color={isSelected ? '#FFFFFF' : '#718096'}
+                                                    strokeWidth={2}
+                                                />
+                                                <Text
+                                                    style={[
+                                                        styles.modalRoleChipText,
+                                                        isSelected && styles.modalRoleChipTextActive,
+                                                    ]}
+                                                >
+                                                    {role}
+                                                </Text>
+                                                {isSelected && (
+                                                    <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                                                )}
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+
                             <Text style={styles.label}>Title</Text>
                             <TextInput
                                 style={styles.input}
@@ -190,19 +357,6 @@ export default function AnnouncementsScreen({ navigation }: any) {
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
-
-                            <Text style={styles.label}>Audience</Text>
-                            <View style={styles.row}>
-                                {['Students', 'Faculty', 'All'].map((aud) => (
-                                    <TouchableOpacity
-                                        key={aud}
-                                        style={[styles.chip, newNotice.targetAudience === aud && styles.chipActive]}
-                                        onPress={() => setNewNotice({ ...newNotice, targetAudience: aud })}
-                                    >
-                                        <Text style={[styles.chipText, newNotice.targetAudience === aud && styles.chipTextActive]}>{aud}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
 
                             {/* Urgent Toggle */}
                             <TouchableOpacity
@@ -359,9 +513,103 @@ const styles = StyleSheet.create({
     // Compose Modal Styles
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '85%' },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
     modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A3A6B' },
-    label: { fontSize: 12, fontWeight: 'bold', color: '#4A5568', marginBottom: 6, marginTop: 12 },
+
+    modalAudienceSection: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 14,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 10,
+    },
+    modalAudienceHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    audienceBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 10,
+    },
+    audienceBadgeAll: {
+        backgroundColor: '#EBF8FF',
+        borderWidth: 1,
+        borderColor: '#BEE3F8',
+    },
+    audienceBadgeTargeted: {
+        backgroundColor: '#FAF5FF',
+        borderWidth: 1,
+        borderColor: '#E9D8FD',
+    },
+    audienceBadgeText: {
+        fontSize: 10,
+        fontWeight: '700',
+    },
+    audienceBadgeTextAll: {
+        color: '#2B6CB0',
+    },
+    audienceBadgeTextTargeted: {
+        color: '#6B46C1',
+    },
+    modalSearchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        height: 38,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 8,
+    },
+    modalSearchInput: {
+        flex: 1,
+        fontSize: 12,
+        color: '#2D3748',
+    },
+    modalChipsWrap: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    modalRoleChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    modalRoleChipActive: {
+        backgroundColor: '#2B6CB0',
+        borderColor: '#2B6CB0',
+    },
+    modalRoleChipText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#4A5568',
+    },
+    modalRoleChipTextActive: {
+        color: '#FFFFFF',
+        fontWeight: '800',
+    },
+    allStudentsChip: {
+        backgroundColor: '#EDF2F7',
+        borderColor: '#CBD5E0',
+    },
+    allStudentsChipActive: {
+        backgroundColor: '#1A3A6B',
+        borderColor: '#1A3A6B',
+    },
+
+    label: { fontSize: 12, fontWeight: 'bold', color: '#4A5568', marginBottom: 6, marginTop: 10 },
     input: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, padding: 12, fontSize: 14, color: '#2D3748' },
     textArea: { height: 100 },
     row: { flexDirection: 'row', gap: 10 },

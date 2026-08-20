@@ -1,5 +1,5 @@
 // src/screens/SubmissionsScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -11,12 +11,15 @@ import {
     RefreshControl,
     Modal,
     Alert,
+    TextInput,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList, Submission } from '../../types';
-import { api } from '../../services/api';
+import { api, rolesApi, submissionsApi, UserGroup } from '../../services/api';
 import {
     ArrowLeft,
     Clock,
@@ -31,7 +34,34 @@ import {
     X,
     Calendar,
     Users,
+    Plus,
+    Search,
+    Send,
+    Tag,
+    Check,
 } from 'lucide-react-native';
+
+const DEFAULT_ROLES = [
+    'Batch_2029',
+    'Batch_2028',
+    'Batch_2027',
+    'Batch_2026',
+    'Batch_2025',
+    'CSE-Core',
+    'CSE-J',
+    'CSE-A',
+    'CSE-B',
+    'CSE-C',
+    'IT-A',
+    'AIML-A',
+    'CS401',
+    'CS302',
+    'CS501',
+    'HOD - Computer Science',
+    'Exam Cell Coordinator',
+    'Placement Cell',
+    'AI & Robotics Club',
+];
 
 type SubmissionsNav = StackNavigationProp<RootStackParamList, 'Submissions'>;
 type SubmissionsRoute = RouteProp<RootStackParamList, 'Submissions'>;
@@ -42,6 +72,7 @@ interface Props {
 }
 
 type FilterKey = 'all' | 'urgent' | 'assignment' | 'project' | 'quiz' | 'lab';
+type CategoryType = 'assignment' | 'project' | 'quiz' | 'lab';
 
 const FILTERS: { key: FilterKey; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -52,7 +83,7 @@ const FILTERS: { key: FilterKey; label: string }[] = [
     { key: 'lab', label: 'Labs' },
 ];
 
-const TYPE_CONFIG = {
+const TYPE_CONFIG: Record<CategoryType, { Icon: any; color: string; bg: string; badgeBg: string; label: string }> = {
     assignment: { Icon: FileText, color: '#2B6CB0', bg: '#EBF8FF', badgeBg: '#BEE3F8', label: 'Assignment' },
     project: { Icon: Layers, color: '#6B46C1', bg: '#FAF5FF', badgeBg: '#E9D8FD', label: 'Project' },
     quiz: { Icon: HelpCircle, color: '#D69E2E', bg: '#FFFFF0', badgeBg: '#FEFCBF', label: 'Quiz' },
@@ -67,13 +98,29 @@ const COURSE_COLORS: Record<string, string> = {
     EC401: '#276749',
 };
 
-const SubmissionsScreen: React.FC<Props> = ({ navigation }) => {
+const SubmissionsScreen: React.FC<Props> = ({ navigation, route }) => {
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
     const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+
+    // Broadcast submission modal state
+    const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [newTask, setNewTask] = useState({
+        title: '',
+        description: '',
+        dueDate: '',
+        type: 'assignment' as CategoryType,
+        urgent: false,
+    });
+
+    // Target roles state
+    const [availableRoles, setAvailableRoles] = useState<string[]>(DEFAULT_ROLES);
+    const [roleSearchQuery, setRoleSearchQuery] = useState('');
+    const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
     const fetchSubmissions = useCallback(async (isRefresh = false) => {
         if (isRefresh) {
@@ -96,7 +143,90 @@ const SubmissionsScreen: React.FC<Props> = ({ navigation }) => {
 
     useEffect(() => {
         fetchSubmissions();
+        rolesApi.getGroups()
+            .then((res) => {
+                if (res.data && Array.isArray(res.data)) {
+                    const dynamicNames = res.data.map((g: UserGroup) => g.name).filter(Boolean);
+                    const merged = Array.from(new Set([...DEFAULT_ROLES, ...dynamicNames]));
+                    setAvailableRoles(merged);
+                }
+            })
+            .catch(() => {});
     }, [fetchSubmissions]);
+
+    // Filtered roles based on search query
+    const filteredRoles = useMemo(() => {
+        const q = roleSearchQuery.trim().toLowerCase();
+        if (!q) return availableRoles;
+        return availableRoles.filter((r) => r.toLowerCase().includes(q));
+    }, [availableRoles, roleSearchQuery]);
+
+    const isAllStudentsSelected = selectedRoles.length === 0;
+
+    const handleSelectAllStudents = () => {
+        setSelectedRoles([]);
+    };
+
+    const handleToggleRole = (role: string) => {
+        if (selectedRoles.includes(role)) {
+            setSelectedRoles(selectedRoles.filter((r) => r !== role));
+        } else {
+            setSelectedRoles([...selectedRoles, role]);
+        }
+    };
+
+    const handleBroadcastSubmission = async () => {
+        if (!isAllStudentsSelected && selectedRoles.length === 0) {
+            Alert.alert('Target Audience Required', 'Please select at least one role or "All Students" before broadcasting.');
+            return;
+        }
+
+        if (!newTask.title.trim()) {
+            Alert.alert('Validation Error', 'Please enter a title for the submission task.');
+            return;
+        }
+
+        if (!newTask.dueDate.trim()) {
+            Alert.alert('Validation Error', 'Please specify a due date (e.g. 2026-08-30).');
+            return;
+        }
+
+        const targetRolesPayload = selectedRoles.length > 0 ? selectedRoles : ['All Students'];
+        const targetAudienceLabel = selectedRoles.length > 0 ? selectedRoles.join(', ') : 'All Students';
+
+        setIsSubmitting(true);
+        try {
+            await submissionsApi.create({
+                title: newTask.title.trim(),
+                description: newTask.description.trim() || undefined,
+                dueDate: newTask.dueDate.trim(),
+                facultyId: route?.params?.faculty?.id || 'FAC-2024-0042',
+                type: newTask.type,
+                urgent: newTask.urgent,
+                status: 'PENDING',
+                targetRoles: targetRolesPayload,
+            });
+
+            Alert.alert('Success', `Submission requirement broadcasted to ${targetAudienceLabel}!`);
+            setIsCreateModalVisible(false);
+            setNewTask({
+                title: '',
+                description: '',
+                dueDate: '',
+                type: 'assignment',
+                urgent: false,
+            });
+            setSelectedRoles([]);
+            setRoleSearchQuery('');
+            fetchSubmissions(true);
+        } catch (error: any) {
+            console.error('Error broadcasting submission:', error);
+            const msg = error.response?.data?.message || 'Failed to broadcast submission. Please verify date format.';
+            Alert.alert('Error', Array.isArray(msg) ? msg.join(', ') : msg);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     const filtered = submissions.filter((s: Submission) => {
         if (activeFilter === 'all') return true;
@@ -130,19 +260,28 @@ const SubmissionsScreen: React.FC<Props> = ({ navigation }) => {
                     <Text style={styles.headerTitle}>Submissions</Text>
                     <Text style={styles.headerSub}>All pending evaluations</Text>
                 </View>
-                <TouchableOpacity
-                    style={styles.backBtn}
-                    onPress={() => fetchSubmissions(true)}
-                    accessibilityLabel="Refresh"
-                >
-                    {urgentCount > 0 ? (
-                        <View style={styles.urgentBadge}>
-                            <Text style={styles.urgentBadgeText}>{urgentCount}</Text>
-                        </View>
-                    ) : (
-                        <RefreshCw size={18} color="#fff" />
-                    )}
-                </TouchableOpacity>
+                <View style={styles.headerRightActions}>
+                    <TouchableOpacity
+                        style={styles.headerBtn}
+                        onPress={() => fetchSubmissions(true)}
+                        accessibilityLabel="Refresh"
+                    >
+                        {urgentCount > 0 ? (
+                            <View style={styles.urgentBadge}>
+                                <Text style={styles.urgentBadgeText}>{urgentCount}</Text>
+                            </View>
+                        ) : (
+                            <RefreshCw size={18} color="#fff" />
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.headerBtn, styles.headerAddBtn]}
+                        onPress={() => setIsCreateModalVisible(true)}
+                        accessibilityLabel="Broadcast New Submission"
+                    >
+                        <Plus size={18} color="#fff" strokeWidth={2.5} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Summary strip */}
@@ -528,6 +667,241 @@ const SubmissionsScreen: React.FC<Props> = ({ navigation }) => {
                     </View>
                 </SafeAreaView>
             </Modal>
+
+            {/* Floating Action Button (FAB) for Broadcasting Submissions */}
+            <TouchableOpacity
+                style={styles.fab}
+                onPress={() => setIsCreateModalVisible(true)}
+                activeOpacity={0.85}
+                accessibilityLabel="Broadcast New Submission"
+            >
+                <Plus size={24} color="#FFFFFF" strokeWidth={2.5} />
+            </TouchableOpacity>
+
+            {/* BROADCAST / CREATE SUBMISSION MODAL */}
+            <Modal
+                visible={isCreateModalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setIsCreateModalVisible(false)}
+            >
+                <KeyboardAvoidingView
+                    style={styles.modalOverlay}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                >
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <View>
+                                <Text style={styles.modalTitle}>Broadcast Submission</Text>
+                                <Text style={styles.modalSub}>Create a submission requirement with role targeting</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setIsCreateModalVisible(false)}>
+                                <X size={24} color="#4A5568" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 480 }}>
+                            {/* Target Audience Section with Searchable Role Selector */}
+                            <View style={styles.modalAudienceSection}>
+                                <View style={styles.modalAudienceHeader}>
+                                    <View style={styles.modalAudienceTitleWrap}>
+                                        <Users size={16} color="#1A3A6B" />
+                                        <Text style={styles.modalAudienceTitle}>Target Audience</Text>
+                                    </View>
+                                    <View style={[styles.audienceBadge, isAllStudentsSelected ? styles.audienceBadgeAll : styles.audienceBadgeTargeted]}>
+                                        <Text style={[styles.audienceBadgeText, isAllStudentsSelected ? styles.audienceBadgeTextAll : styles.audienceBadgeTextTargeted]}>
+                                            {isAllStudentsSelected ? 'All Students' : `${selectedRoles.length} Selected`}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* Search Bar */}
+                                <View style={styles.modalSearchBar}>
+                                    <Search size={16} color="#718096" style={{ marginRight: 6 }} />
+                                    <TextInput
+                                        style={styles.modalSearchInput}
+                                        placeholder="Search roles (e.g. Batch_2029, CSE-Core)..."
+                                        placeholderTextColor="#A0AEC0"
+                                        value={roleSearchQuery}
+                                        onChangeText={setRoleSearchQuery}
+                                        autoCapitalize="none"
+                                    />
+                                    {roleSearchQuery.length > 0 && (
+                                        <TouchableOpacity onPress={() => setRoleSearchQuery('')}>
+                                            <X size={14} color="#718096" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                                {/* Roles Chips */}
+                                <View style={styles.modalChipsWrap}>
+                                    {/* 'All Students' Chip */}
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.modalRoleChip,
+                                            styles.allStudentsChip,
+                                            isAllStudentsSelected && styles.allStudentsChipActive,
+                                        ]}
+                                        onPress={handleSelectAllStudents}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Users
+                                            size={12}
+                                            color={isAllStudentsSelected ? '#FFFFFF' : '#1A3A6B'}
+                                            strokeWidth={2.5}
+                                        />
+                                        <Text
+                                            style={[
+                                                styles.modalRoleChipText,
+                                                isAllStudentsSelected && styles.modalRoleChipTextActive,
+                                            ]}
+                                        >
+                                            All Students
+                                        </Text>
+                                        {isAllStudentsSelected && (
+                                            <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                                        )}
+                                    </TouchableOpacity>
+
+                                    {/* Filtered Role Chips */}
+                                    {filteredRoles.map((role) => {
+                                        const isSelected = selectedRoles.includes(role);
+                                        return (
+                                            <TouchableOpacity
+                                                key={role}
+                                                style={[
+                                                    styles.modalRoleChip,
+                                                    isSelected && styles.modalRoleChipActive,
+                                                ]}
+                                                onPress={() => handleToggleRole(role)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Tag
+                                                    size={11}
+                                                    color={isSelected ? '#FFFFFF' : '#718096'}
+                                                    strokeWidth={2}
+                                                />
+                                                <Text
+                                                    style={[
+                                                        styles.modalRoleChipText,
+                                                        isSelected && styles.modalRoleChipTextActive,
+                                                    ]}
+                                                >
+                                                    {role}
+                                                </Text>
+                                                {isSelected && (
+                                                    <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                                                )}
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+
+                            {/* Task Title */}
+                            <Text style={styles.inputLabel}>Task Title *</Text>
+                            <TextInput
+                                style={styles.textInput}
+                                placeholder="e.g. Lab Exercise 4 – Neural Networks"
+                                placeholderTextColor="#A0AEC0"
+                                value={newTask.title}
+                                onChangeText={(t) => setNewTask({ ...newTask, title: t })}
+                            />
+
+                            {/* Submission Category */}
+                            <Text style={styles.inputLabel}>Task Category *</Text>
+                            <View style={styles.categoryGridModal}>
+                                {(['assignment', 'project', 'quiz', 'lab'] as CategoryType[]).map((catKey) => {
+                                    const conf = TYPE_CONFIG[catKey];
+                                    const Icon = conf.Icon;
+                                    const isSelected = newTask.type === catKey;
+                                    return (
+                                        <TouchableOpacity
+                                            key={catKey}
+                                            style={[
+                                                styles.catOptionModal,
+                                                isSelected && { backgroundColor: conf.color, borderColor: conf.color },
+                                            ]}
+                                            onPress={() => setNewTask({ ...newTask, type: catKey })}
+                                        >
+                                            <Icon size={16} color={isSelected ? '#FFFFFF' : conf.color} />
+                                            <Text
+                                                style={[
+                                                    styles.catOptionModalText,
+                                                    isSelected ? { color: '#FFFFFF' } : { color: '#4A5568' },
+                                                ]}
+                                            >
+                                                {conf.label}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+
+                            {/* Due Date */}
+                            <Text style={styles.inputLabel}>Due Date (YYYY-MM-DD) *</Text>
+                            <View style={styles.dateInputContainer}>
+                                <Calendar size={16} color="#718096" style={{ marginRight: 8 }} />
+                                <TextInput
+                                    style={styles.dateTextInput}
+                                    placeholder="e.g. 2026-08-30"
+                                    placeholderTextColor="#A0AEC0"
+                                    value={newTask.dueDate}
+                                    onChangeText={(t) => setNewTask({ ...newTask, dueDate: t })}
+                                />
+                            </View>
+
+                            {/* Description */}
+                            <Text style={styles.inputLabel}>Description / Guidelines (Optional)</Text>
+                            <TextInput
+                                style={[styles.textInput, styles.textArea]}
+                                placeholder="Details about this submission, format specs, rubric..."
+                                placeholderTextColor="#A0AEC0"
+                                multiline
+                                numberOfLines={3}
+                                textAlignVertical="top"
+                                value={newTask.description}
+                                onChangeText={(t) => setNewTask({ ...newTask, description: t })}
+                            />
+
+                            {/* Urgent Priority Toggle */}
+                            <TouchableOpacity
+                                style={[styles.urgentToggle, newTask.urgent && styles.urgentToggleActive]}
+                                onPress={() => setNewTask({ ...newTask, urgent: !newTask.urgent })}
+                                activeOpacity={0.8}
+                            >
+                                <AlertTriangle size={18} color={newTask.urgent ? '#E53E3E' : '#A0AEC0'} />
+                                <View style={{ flex: 1, marginLeft: 10 }}>
+                                    <Text style={[styles.urgentToggleTitle, newTask.urgent && { color: '#E53E3E' }]}>
+                                        Mark as Urgent Submission
+                                    </Text>
+                                    <Text style={styles.urgentToggleSub}>Pins this task to student priority widgets</Text>
+                                </View>
+                                <View style={[styles.checkbox, newTask.urgent && styles.checkboxActive]}>
+                                    {newTask.urgent && <View style={styles.checkboxInner} />}
+                                </View>
+                            </TouchableOpacity>
+
+                            {/* Submit Button */}
+                            <TouchableOpacity
+                                style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
+                                onPress={handleBroadcastSubmission}
+                                disabled={isSubmitting}
+                                activeOpacity={0.85}
+                            >
+                                {isSubmitting ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <>
+                                        <Send size={16} color="#fff" strokeWidth={2.5} />
+                                        <Text style={styles.submitBtnText}>Broadcast Submission</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -555,6 +929,22 @@ const styles = StyleSheet.create({
     headerCenter: { flex: 1, alignItems: 'center' },
     headerTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
     headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 1 },
+    headerRightActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    headerBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerAddBtn: {
+        backgroundColor: '#2B6CB0',
+    },
     urgentBadge: {
         backgroundColor: '#E53E3E',
         borderRadius: 10,
@@ -919,6 +1309,282 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
     },
     acknowledgeBtnText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '800',
+    },
+
+    // FAB Styles
+    fab: {
+        position: 'absolute',
+        bottom: 24,
+        right: 24,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#2B6CB0',
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.25,
+        shadowRadius: 5,
+    },
+
+    // Broadcast Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 20,
+        maxHeight: '90%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#0F2754',
+    },
+    modalSub: {
+        fontSize: 11,
+        color: '#718096',
+        marginTop: 2,
+    },
+
+    // Target Audience Section
+    modalAudienceSection: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 14,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 10,
+    },
+    modalAudienceHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    modalAudienceTitleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    modalAudienceTitle: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#1A3A6B',
+    },
+    audienceBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 10,
+    },
+    audienceBadgeAll: {
+        backgroundColor: '#EBF8FF',
+        borderWidth: 1,
+        borderColor: '#BEE3F8',
+    },
+    audienceBadgeTargeted: {
+        backgroundColor: '#FAF5FF',
+        borderWidth: 1,
+        borderColor: '#E9D8FD',
+    },
+    audienceBadgeText: {
+        fontSize: 10,
+        fontWeight: '700',
+    },
+    audienceBadgeTextAll: {
+        color: '#2B6CB0',
+    },
+    audienceBadgeTextTargeted: {
+        color: '#6B46C1',
+    },
+    modalSearchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        height: 38,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 8,
+    },
+    modalSearchInput: {
+        flex: 1,
+        fontSize: 12,
+        color: '#2D3748',
+    },
+    modalChipsWrap: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    modalRoleChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    modalRoleChipActive: {
+        backgroundColor: '#2B6CB0',
+        borderColor: '#2B6CB0',
+    },
+    modalRoleChipText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#4A5568',
+    },
+    modalRoleChipTextActive: {
+        color: '#FFFFFF',
+        fontWeight: '800',
+    },
+    allStudentsChip: {
+        backgroundColor: '#EDF2F7',
+        borderColor: '#CBD5E0',
+    },
+    allStudentsChipActive: {
+        backgroundColor: '#0F2754',
+        borderColor: '#0F2754',
+    },
+
+    // Form inputs
+    inputLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#4A5568',
+        marginBottom: 6,
+        marginTop: 10,
+    },
+    textInput: {
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 10,
+        padding: 12,
+        fontSize: 13,
+        color: '#2D3748',
+    },
+    textArea: {
+        height: 75,
+        textAlignVertical: 'top',
+    },
+    dateInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        height: 44,
+    },
+    dateTextInput: {
+        flex: 1,
+        fontSize: 13,
+        color: '#2D3748',
+    },
+
+    // Category Grid Modal
+    categoryGridModal: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    catOptionModal: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        paddingVertical: 10,
+        borderRadius: 10,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    catOptionModalText: {
+        fontSize: 11,
+        fontWeight: '700',
+    },
+
+    // Urgent Toggle
+    urgentToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 10,
+        padding: 12,
+        marginTop: 12,
+    },
+    urgentToggleActive: {
+        backgroundColor: '#FFF5F5',
+        borderColor: '#FEB2B2',
+    },
+    urgentToggleTitle: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#2D3748',
+    },
+    urgentToggleSub: {
+        fontSize: 10,
+        color: '#718096',
+        marginTop: 1,
+    },
+    checkbox: {
+        width: 20,
+        height: 20,
+        borderRadius: 4,
+        borderWidth: 2,
+        borderColor: '#CBD5E0',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxActive: {
+        borderColor: '#E53E3E',
+    },
+    checkboxInner: {
+        width: 10,
+        height: 10,
+        borderRadius: 2,
+        backgroundColor: '#E53E3E',
+    },
+
+    // Submit button
+    submitBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#2B6CB0',
+        borderRadius: 12,
+        paddingVertical: 14,
+        marginTop: 18,
+        marginBottom: 16,
+    },
+    submitBtnDisabled: {
+        opacity: 0.7,
+    },
+    submitBtnText: {
         color: '#FFFFFF',
         fontSize: 15,
         fontWeight: '800',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
     View,
     Text,
@@ -30,11 +30,36 @@ import {
     HelpCircle,
     FlaskConical,
     X,
+    Users,
+    Tag,
+    Check,
 } from 'lucide-react-native';
-import { adminApi, submissionsApi, SubmissionItem, User } from '../../services/api';
+import { adminApi, submissionsApi, rolesApi, SubmissionItem, User, UserGroup } from '../../services/api';
 
 type CategoryType = 'assignment' | 'project' | 'quiz' | 'lab';
 type CategoryFilter = 'all' | 'urgent' | 'assignment' | 'project' | 'quiz' | 'lab';
+
+const DEFAULT_ROLES = [
+    'Batch_2029',
+    'Batch_2028',
+    'Batch_2027',
+    'Batch_2026',
+    'Batch_2025',
+    'CSE-Core',
+    'CSE-J',
+    'CSE-A',
+    'CSE-B',
+    'CSE-C',
+    'IT-A',
+    'AIML-A',
+    'CS401',
+    'CS302',
+    'CS501',
+    'HOD - Computer Science',
+    'Exam Cell Coordinator',
+    'Placement Cell',
+    'AI & Robotics Club',
+];
 
 const CATEGORY_CONFIG: Record<CategoryType, { Icon: any; color: string; bg: string; badgeBg: string; label: string }> = {
     assignment: { Icon: FileText, color: '#2B6CB0', bg: '#EBF8FF', badgeBg: '#BEE3F8', label: 'Assignment' },
@@ -74,17 +99,29 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
         status: 'PENDING' as 'PENDING' | 'SUBMITTED' | 'OVERDUE',
     });
 
+    // Target roles state in modal
+    const [availableRoles, setAvailableRoles] = useState<string[]>(DEFAULT_ROLES);
+    const [roleSearchQuery, setRoleSearchQuery] = useState('');
+    const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+
     const loadData = async () => {
         try {
-            const [subRes, usersRes] = await Promise.all([
+            const [subRes, usersRes, groupsRes] = await Promise.all([
                 submissionsApi.getAll(),
                 adminApi.getAllUsers().catch(() => [] as User[]),
+                rolesApi.getGroups().catch(() => ({ data: [] as UserGroup[] })),
             ]);
             setSubmissions(subRes.data || []);
             const faculties = (usersRes || []).filter((u: User) => u.role === 'FACULTY');
             setFacultyList(faculties);
             if (faculties.length > 0 && !newTask.facultyId) {
                 setNewTask((prev) => ({ ...prev, facultyId: faculties[0].id }));
+            }
+
+            if (groupsRes.data && Array.isArray(groupsRes.data)) {
+                const dynamicNames = groupsRes.data.map((g: UserGroup) => g.name).filter(Boolean);
+                const merged = Array.from(new Set([...DEFAULT_ROLES, ...dynamicNames]));
+                setAvailableRoles(merged);
             }
         } catch (error) {
             console.error('Failed to load submissions:', error);
@@ -104,7 +141,33 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
         loadData();
     };
 
+    // Filtered roles based on search query
+    const filteredRoles = useMemo(() => {
+        const q = roleSearchQuery.trim().toLowerCase();
+        if (!q) return availableRoles;
+        return availableRoles.filter((r) => r.toLowerCase().includes(q));
+    }, [availableRoles, roleSearchQuery]);
+
+    const isAllStudentsSelected = selectedRoles.length === 0;
+
+    const handleSelectAllStudents = () => {
+        setSelectedRoles([]);
+    };
+
+    const handleToggleRole = (role: string) => {
+        if (selectedRoles.includes(role)) {
+            setSelectedRoles(selectedRoles.filter((r) => r !== role));
+        } else {
+            setSelectedRoles([...selectedRoles, role]);
+        }
+    };
+
     const handleCreateTask = async () => {
+        if (!isAllStudentsSelected && selectedRoles.length === 0) {
+            Alert.alert('Target Audience Required', 'Please select at least one role or "All Students" before broadcasting.');
+            return;
+        }
+
         if (!newTask.title.trim()) {
             Alert.alert('Validation Error', 'Please enter a task title.');
             return;
@@ -118,6 +181,9 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
             return;
         }
 
+        const targetRolesPayload = selectedRoles.length > 0 ? selectedRoles : ['All Students'];
+        const targetAudienceLabel = selectedRoles.length > 0 ? selectedRoles.join(', ') : 'All Students';
+
         setIsSubmitting(true);
         try {
             await adminApi.createSubmission({
@@ -128,9 +194,10 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                 type: newTask.type,
                 urgent: newTask.urgent,
                 status: newTask.status,
+                targetRoles: targetRolesPayload,
             });
 
-            Alert.alert('Success', 'Task assigned successfully!');
+            Alert.alert('Success', `Task assigned and broadcasted to ${targetAudienceLabel}!`);
             setModalVisible(false);
             setNewTask({
                 title: '',
@@ -141,6 +208,8 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                 urgent: false,
                 status: 'PENDING',
             });
+            setSelectedRoles([]);
+            setRoleSearchQuery('');
             loadData();
         } catch (error: any) {
             console.error('Failed to create task:', error);
@@ -482,7 +551,101 @@ export default function AdminSubmissionsScreen({ navigation }: any) {
                             </TouchableOpacity>
                         </View>
 
-                        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 450 }}>
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 480 }}>
+                            {/* Target Audience Section */}
+                            <View style={styles.modalAudienceSection}>
+                                <View style={styles.modalAudienceHeader}>
+                                    <Text style={styles.label}>Target Audience</Text>
+                                    <View style={[styles.audienceBadge, isAllStudentsSelected ? styles.audienceBadgeAll : styles.audienceBadgeTargeted]}>
+                                        <Text style={[styles.audienceBadgeText, isAllStudentsSelected ? styles.audienceBadgeTextAll : styles.audienceBadgeTextTargeted]}>
+                                            {isAllStudentsSelected ? 'All Students' : `${selectedRoles.length} Selected`}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* Search Bar */}
+                                <View style={styles.modalSearchBar}>
+                                    <Search size={16} color="#718096" style={{ marginRight: 6 }} />
+                                    <TextInput
+                                        style={styles.modalSearchInput}
+                                        placeholder="Search roles (e.g. Batch_2029, CSE-Core)..."
+                                        placeholderTextColor="#A0AEC0"
+                                        value={roleSearchQuery}
+                                        onChangeText={setRoleSearchQuery}
+                                        autoCapitalize="none"
+                                    />
+                                    {roleSearchQuery.length > 0 && (
+                                        <TouchableOpacity onPress={() => setRoleSearchQuery('')}>
+                                            <X size={14} color="#718096" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                                {/* Roles Chips */}
+                                <View style={styles.modalChipsWrap}>
+                                    {/* 'All Students' Chip */}
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.modalRoleChip,
+                                            styles.allStudentsChip,
+                                            isAllStudentsSelected && styles.allStudentsChipActive,
+                                        ]}
+                                        onPress={handleSelectAllStudents}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Users
+                                            size={12}
+                                            color={isAllStudentsSelected ? '#FFFFFF' : '#1A3A6B'}
+                                            strokeWidth={2.5}
+                                        />
+                                        <Text
+                                            style={[
+                                                styles.modalRoleChipText,
+                                                isAllStudentsSelected && styles.modalRoleChipTextActive,
+                                            ]}
+                                        >
+                                            All Students
+                                        </Text>
+                                        {isAllStudentsSelected && (
+                                            <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                                        )}
+                                    </TouchableOpacity>
+
+                                    {/* Filtered Role Chips */}
+                                    {filteredRoles.map((role) => {
+                                        const isSelected = selectedRoles.includes(role);
+                                        return (
+                                            <TouchableOpacity
+                                                key={role}
+                                                style={[
+                                                    styles.modalRoleChip,
+                                                    isSelected && styles.modalRoleChipActive,
+                                                ]}
+                                                onPress={() => handleToggleRole(role)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Tag
+                                                    size={11}
+                                                    color={isSelected ? '#FFFFFF' : '#718096'}
+                                                    strokeWidth={2}
+                                                />
+                                                <Text
+                                                    style={[
+                                                        styles.modalRoleChipText,
+                                                        isSelected && styles.modalRoleChipTextActive,
+                                                    ]}
+                                                >
+                                                    {role}
+                                                </Text>
+                                                {isSelected && (
+                                                    <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                                                )}
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+
                             <Text style={styles.label}>Task Title *</Text>
                             <TextInput
                                 style={styles.input}
@@ -838,6 +1001,99 @@ const styles = StyleSheet.create({
     },
     modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A3A6B' },
     modalSub: { fontSize: 11, color: '#718096', marginTop: 2 },
+
+    modalAudienceSection: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 14,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 8,
+    },
+    modalAudienceHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    audienceBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 10,
+    },
+    audienceBadgeAll: {
+        backgroundColor: '#EBF8FF',
+        borderWidth: 1,
+        borderColor: '#BEE3F8',
+    },
+    audienceBadgeTargeted: {
+        backgroundColor: '#FAF5FF',
+        borderWidth: 1,
+        borderColor: '#E9D8FD',
+    },
+    audienceBadgeText: {
+        fontSize: 10,
+        fontWeight: '700',
+    },
+    audienceBadgeTextAll: {
+        color: '#2B6CB0',
+    },
+    audienceBadgeTextTargeted: {
+        color: '#6B46C1',
+    },
+    modalSearchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        height: 38,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 8,
+    },
+    modalSearchInput: {
+        flex: 1,
+        fontSize: 12,
+        color: '#2D3748',
+    },
+    modalChipsWrap: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    modalRoleChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    modalRoleChipActive: {
+        backgroundColor: '#2B6CB0',
+        borderColor: '#2B6CB0',
+    },
+    modalRoleChipText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#4A5568',
+    },
+    modalRoleChipTextActive: {
+        color: '#FFFFFF',
+        fontWeight: '800',
+    },
+    allStudentsChip: {
+        backgroundColor: '#EDF2F7',
+        borderColor: '#CBD5E0',
+    },
+    allStudentsChipActive: {
+        backgroundColor: '#1A3A6B',
+        borderColor: '#1A3A6B',
+    },
     label: {
         fontSize: 12,
         fontWeight: 'bold',

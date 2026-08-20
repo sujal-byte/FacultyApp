@@ -13,6 +13,7 @@ export const api = axios.create({
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
+    //'ngrok-skip-browser-warning': 'true',
   },
 });
 
@@ -96,6 +97,7 @@ export interface SubmissionItem {
   facultyId: string;
   type?: 'assignment' | 'project' | 'quiz' | 'lab' | string;
   urgent?: boolean;
+  targetRoles?: string[];
   faculty?: {
     id: string;
     name: string;
@@ -132,6 +134,7 @@ export const adminApi = {
     type?: 'assignment' | 'project' | 'quiz' | 'lab' | string;
     urgent?: boolean;
     status?: 'PENDING' | 'SUBMITTED' | 'OVERDUE';
+    targetRoles?: string[];
   }) => api.post<SubmissionItem>('/submissions', data),
 };
 
@@ -157,11 +160,18 @@ export const submissionsApi = {
     type?: 'assignment' | 'project' | 'quiz' | 'lab' | string;
     urgent?: boolean;
     status?: 'PENDING' | 'SUBMITTED' | 'OVERDUE';
+    targetRoles?: string[];
   }) => api.post<SubmissionItem>('/submissions', data),
 };
 
 export const announcementsApi = {
   getAll: () => api.get('/announcements'),
-  create: (data: { title: string; message: string; category: string; targetAudience: string; isUrgent: boolean }) =>
-    api.post('/announcements', data),
+  create: (data: {
+    title: string;
+    message: string;
+    category: string;
+    targetAudience?: string;
+    isUrgent?: boolean;
+    targetRoles?: string[];
+  }) => api.post('/announcements', data),
 };

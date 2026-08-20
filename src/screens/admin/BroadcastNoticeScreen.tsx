@@ -1,7 +1,7 @@
 import { ActivityIndicator } from 'react-native';
 import { announcementsApi } from '../../services/api';
 import * as SecureStore from 'expo-secure-store';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     Text,
@@ -13,17 +13,43 @@ import {
     Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Send, AlertTriangle, Users, BookOpen, Calendar, Layers, Award, GraduationCap, Bell, Tag } from 'lucide-react-native';
+import { ArrowLeft, Send, AlertTriangle, Users, BookOpen, Calendar, Layers, Award, GraduationCap, Bell, Tag, Search, X, Check } from 'lucide-react-native';
 import { rolesApi, UserGroup } from '../../services/api';
+
+const DEFAULT_ROLES = [
+    'Batch_2029',
+    'Batch_2028',
+    'Batch_2027',
+    'Batch_2026',
+    'Batch_2025',
+    'CSE-Core',
+    'CSE-J',
+    'CSE-A',
+    'CSE-B',
+    'CSE-C',
+    'IT-A',
+    'AIML-A',
+    'CS401',
+    'CS302',
+    'CS501',
+    'HOD - Computer Science',
+    'Exam Cell Coordinator',
+    'Placement Cell',
+    'AI & Robotics Club',
+];
 
 export default function BroadcastNoticeScreen({ navigation }: any) {
     const [title, setTitle] = useState('');
     const [message, setMessage] = useState('');
     const [category, setCategory] = useState('Academic');
-    const [targetAudience, setTargetAudience] = useState('All');
     const [isUrgent, setIsUrgent] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [customCategories, setCustomCategories] = useState<string[]>([]);
+
+    // Target roles state
+    const [availableRoles, setAvailableRoles] = useState<string[]>(DEFAULT_ROLES);
+    const [roleSearchQuery, setRoleSearchQuery] = useState('');
+    const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
     const categories = [
         { label: 'Academic', icon: BookOpen },
@@ -36,48 +62,80 @@ export default function BroadcastNoticeScreen({ navigation }: any) {
         { label: 'General', icon: Bell },
     ];
 
-    React.useEffect(() => {
+    useEffect(() => {
         rolesApi.getGroups()
             .then((res) => {
-                if (res.data) {
+                if (res.data && Array.isArray(res.data)) {
                     const groupCats = res.data.map((g: UserGroup) => g.category).filter(Boolean);
                     const uniqueExtra = Array.from(new Set(groupCats)).filter(
                         (c) => !categories.some((cat) => cat.label.toLowerCase() === (c as string).toLowerCase())
                     ) as string[];
                     setCustomCategories(uniqueExtra);
+
+                    const dynamicNames = res.data.map((g: UserGroup) => g.name).filter(Boolean);
+                    const merged = Array.from(new Set([...DEFAULT_ROLES, ...dynamicNames]));
+                    setAvailableRoles(merged);
                 }
             })
             .catch(() => { });
     }, []);
 
-    const audiences = ['All', 'Faculty', 'Students'];
+    // Filtered roles based on search query
+    const filteredRoles = useMemo(() => {
+        const q = roleSearchQuery.trim().toLowerCase();
+        if (!q) return availableRoles;
+        return availableRoles.filter((r) => r.toLowerCase().includes(q));
+    }, [availableRoles, roleSearchQuery]);
+
+    const isAllStudentsSelected = selectedRoles.length === 0;
+
+    const handleSelectAllStudents = () => {
+        setSelectedRoles([]);
+    };
+
+    const handleToggleRole = (role: string) => {
+        if (selectedRoles.includes(role)) {
+            setSelectedRoles(selectedRoles.filter((r) => r !== role));
+        } else {
+            setSelectedRoles([...selectedRoles, role]);
+        }
+    };
 
     const handleBroadcast = async () => {
+        // Validate target audience
+        if (!isAllStudentsSelected && selectedRoles.length === 0) {
+            Alert.alert('Target Audience Required', 'Please select at least one role or "All Students" before broadcasting.');
+            return;
+        }
+
         if (!title.trim() || !message.trim()) {
             Alert.alert('Missing Fields', 'Please fill in both the title and message before broadcasting.');
             return;
         }
 
+        const targetRolesPayload = selectedRoles.length > 0 ? selectedRoles : ['All Students'];
+        const targetAudienceLabel = selectedRoles.length > 0 ? selectedRoles.join(', ') : 'All Students';
+
         setIsSubmitting(true);
         try {
             await announcementsApi.create({
-                title,
-                message,
+                title: title.trim(),
+                message: message.trim(),
                 category,
-                targetAudience,
+                targetAudience: targetAudienceLabel,
+                targetRoles: targetRolesPayload,
                 isUrgent
             });
 
             Alert.alert(
                 'Notice Broadcasted',
-                `Your notice "${title}" has been sent successfully.`,
+                `Your notice "${title}" has been broadcasted to ${targetAudienceLabel}.`,
                 [{ text: 'OK', onPress: () => navigation.goBack() }]
             );
         } catch (error: any) {
             console.error('Error broadcasting notice:', error);
             const status = error.response?.status;
             if (status === 401) {
-                // Stale or invalid token — clear it and force re-login
                 await SecureStore.deleteItemAsync('userToken');
                 Alert.alert(
                     'Session Expired',
@@ -107,6 +165,116 @@ export default function BroadcastNoticeScreen({ navigation }: any) {
 
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
+                {/* Target Audience Section with Searchable Role Selector */}
+                <View style={styles.sectionCard}>
+                    <View style={styles.sectionHeaderRow}>
+                        <View style={styles.sectionTitleWrap}>
+                            <Users size={18} color="#1A3A6B" />
+                            <Text style={styles.sectionTitle}>Target Audience</Text>
+                        </View>
+                        <View style={[styles.audienceBadge, isAllStudentsSelected ? styles.audienceBadgeAll : styles.audienceBadgeTargeted]}>
+                            <Text style={[styles.audienceBadgeText, isAllStudentsSelected ? styles.audienceBadgeTextAll : styles.audienceBadgeTextTargeted]}>
+                                {isAllStudentsSelected ? 'All Students' : `${selectedRoles.length} Selected`}
+                            </Text>
+                        </View>
+                    </View>
+                    <Text style={styles.sectionSubtitle}>
+                        Select specific roles to target your broadcast or keep &quot;All Students&quot; active.
+                    </Text>
+
+                    {/* Search Bar with Search Icon */}
+                    <View style={styles.searchBarContainer}>
+                        <Search size={18} color="#718096" style={styles.searchIcon} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search roles (e.g. Batch_2029, CSE-Core, CSE-J)..."
+                            placeholderTextColor="#A0AEC0"
+                            value={roleSearchQuery}
+                            onChangeText={setRoleSearchQuery}
+                            autoCapitalize="none"
+                        />
+                        {roleSearchQuery.length > 0 && (
+                            <TouchableOpacity
+                                onPress={() => setRoleSearchQuery('')}
+                                style={styles.searchClearBtn}
+                                accessibilityLabel="Clear search"
+                            >
+                                <X size={16} color="#718096" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    {/* Roles Selection Chips (Wrapped Layout) */}
+                    <View style={styles.chipsWrapper}>
+                        {/* Default 'All Students' Chip */}
+                        <TouchableOpacity
+                            style={[
+                                styles.roleChip,
+                                styles.allStudentsChip,
+                                isAllStudentsSelected && styles.allStudentsChipActive,
+                            ]}
+                            onPress={handleSelectAllStudents}
+                            activeOpacity={0.7}
+                        >
+                            <Users
+                                size={14}
+                                color={isAllStudentsSelected ? '#FFFFFF' : '#1A3A6B'}
+                                strokeWidth={2.5}
+                            />
+                            <Text
+                                style={[
+                                    styles.roleChipText,
+                                    isAllStudentsSelected && styles.roleChipTextActive,
+                                ]}
+                            >
+                                All Students
+                            </Text>
+                            {isAllStudentsSelected && (
+                                <Check size={14} color="#FFFFFF" strokeWidth={3} />
+                            )}
+                        </TouchableOpacity>
+
+                        {/* Filtered Dynamic/Static Role Chips */}
+                        {filteredRoles.map((role) => {
+                            const isSelected = selectedRoles.includes(role);
+                            return (
+                                <TouchableOpacity
+                                    key={role}
+                                    style={[
+                                        styles.roleChip,
+                                        isSelected && styles.roleChipActive,
+                                    ]}
+                                    onPress={() => handleToggleRole(role)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Tag
+                                        size={12}
+                                        color={isSelected ? '#FFFFFF' : '#718096'}
+                                        strokeWidth={2}
+                                    />
+                                    <Text
+                                        style={[
+                                            styles.roleChipText,
+                                            isSelected && styles.roleChipTextActive,
+                                        ]}
+                                    >
+                                        {role}
+                                    </Text>
+                                    {isSelected && (
+                                        <Check size={13} color="#FFFFFF" strokeWidth={3} />
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+
+                    {filteredRoles.length === 0 && (
+                        <Text style={styles.noRolesText}>
+                            No roles matching &quot;{roleSearchQuery}&quot;
+                        </Text>
+                    )}
+                </View>
+
                 {/* Title Input */}
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>Notice Title</Text>
@@ -117,24 +285,6 @@ export default function BroadcastNoticeScreen({ navigation }: any) {
                         value={title}
                         onChangeText={setTitle}
                     />
-                </View>
-
-                {/* Target Audience */}
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Target Audience</Text>
-                    <View style={styles.row}>
-                        {audiences.map((aud) => (
-                            <TouchableOpacity
-                                key={aud}
-                                style={[styles.chip, targetAudience === aud && styles.chipActive]}
-                                onPress={() => setTargetAudience(aud)}
-                            >
-                                <Text style={[styles.chipText, targetAudience === aud && styles.chipTextActive]}>
-                                    {aud}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
                 </View>
 
                 {/* Category Selection */}
@@ -252,10 +402,134 @@ const styles = StyleSheet.create({
         backgroundColor: '#F0F4F8',
         borderTopLeftRadius: 22,
         borderTopRightRadius: 22,
-        padding: 20,
+        padding: 16,
         paddingBottom: 40,
+        gap: 14,
     },
-    inputGroup: { marginBottom: 20 },
+    sectionCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        shadowColor: '#1A3A6B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 2,
+    },
+    sectionHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 4,
+    },
+    sectionTitleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    sectionTitle: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: '#1A3A6B',
+    },
+    sectionSubtitle: {
+        fontSize: 12,
+        color: '#718096',
+        marginBottom: 12,
+    },
+    audienceBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    audienceBadgeAll: {
+        backgroundColor: '#EBF8FF',
+        borderWidth: 1,
+        borderColor: '#BEE3F8',
+    },
+    audienceBadgeTargeted: {
+        backgroundColor: '#FAF5FF',
+        borderWidth: 1,
+        borderColor: '#E9D8FD',
+    },
+    audienceBadgeText: {
+        fontSize: 11,
+        fontWeight: '700',
+    },
+    audienceBadgeTextAll: {
+        color: '#2B6CB0',
+    },
+    audienceBadgeTextTargeted: {
+        color: '#6B46C1',
+    },
+    searchBarContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        height: 44,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 12,
+    },
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 13,
+        color: '#2D3748',
+    },
+    searchClearBtn: {
+        padding: 4,
+    },
+    chipsWrapper: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    roleChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#F7FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    roleChipActive: {
+        backgroundColor: '#2B6CB0',
+        borderColor: '#2B6CB0',
+    },
+    roleChipText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#4A5568',
+    },
+    roleChipTextActive: {
+        color: '#FFFFFF',
+        fontWeight: '800',
+    },
+    allStudentsChip: {
+        backgroundColor: '#EDF2F7',
+        borderColor: '#CBD5E0',
+    },
+    allStudentsChipActive: {
+        backgroundColor: '#1A3A6B',
+        borderColor: '#1A3A6B',
+    },
+    noRolesText: {
+        fontSize: 12,
+        color: '#A0AEC0',
+        textAlign: 'center',
+        marginVertical: 10,
+    },
+    inputGroup: { marginBottom: 16 },
     label: {
         fontSize: 13,
         fontWeight: '700',

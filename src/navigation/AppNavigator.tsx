@@ -21,6 +21,8 @@ import ProfileScreen from '../screens/faculty/ProfileScreen';
 import AdminFeedbackScreen from '../screens/admin/AdminFeedbackScreen';
 import AdminQuizScreen from '../screens/admin/AdminQuizScreen';
 import AdminSubmissionsScreen from '../screens/admin/AdminSubmissionsScreen';
+import CreateAnnouncementScreen from '../screens/faculty/CreateAnnouncementScreen';
+import CreateSubmissionScreen from '../screens/faculty/CreateSubmissionScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -50,6 +52,8 @@ export default function AppNavigator() {
             <Stack.Screen name="LeaveApplication" component={LeaveApplicationScreen} />
             <Stack.Screen name="Courses" component={CoursesScreen} />
             <Stack.Screen name="Submissions" component={SubmissionsScreen} />
+            <Stack.Screen name="CreateAnnouncement" component={CreateAnnouncementScreen} />
+            <Stack.Screen name="CreateSubmission" component={CreateSubmissionScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
         </Stack.Navigator>
     );
